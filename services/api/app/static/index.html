@@ -1,0 +1,468 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ReelsEdits</title>
+<style>
+  :root {
+    --bg:#0b0d10; --panel:#14181d; --panel-2:#1b2027; --line:#252c35;
+    --ink:#e8edf3; --muted:#8b97a6; --accent:#5b8cff; --ok:#3fb950;
+    --warn:#d29922; --bad:#f85149; --radius:10px;
+  }
+  * { box-sizing:border-box; }
+  body {
+    margin:0; background:var(--bg); color:var(--ink);
+    font:15px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  }
+  a { color:var(--accent); }
+  header {
+    padding:22px 28px; border-bottom:1px solid var(--line);
+    display:flex; align-items:baseline; gap:14px; flex-wrap:wrap;
+  }
+  header h1 { margin:0; font-size:19px; letter-spacing:-.2px; }
+  header .tag { color:var(--muted); font-size:13px; }
+  main { max-width:1120px; margin:0 auto; padding:28px; }
+
+  .steps { display:grid; gap:18px; }
+  .card {
+    background:var(--panel); border:1px solid var(--line);
+    border-radius:var(--radius); padding:20px 22px;
+  }
+  .card.done { border-color:#1f3d28; }
+  .card h2 {
+    margin:0 0 4px; font-size:15px; display:flex; align-items:center; gap:9px;
+  }
+  .num {
+    width:22px; height:22px; border-radius:50%; background:var(--panel-2);
+    color:var(--muted); font-size:12px; display:grid; place-items:center; flex:none;
+  }
+  .card.done .num { background:var(--ok); color:#0b0d10; }
+  .card p.hint { margin:2px 0 14px 31px; color:var(--muted); font-size:13px; }
+  .body { margin-left:31px; }
+
+  .drop {
+    border:1.5px dashed var(--line); border-radius:var(--radius);
+    padding:26px; text-align:center; color:var(--muted); cursor:pointer;
+    transition:.15s; font-size:14px;
+  }
+  .drop:hover, .drop.over { border-color:var(--accent); color:var(--ink); background:#0f141a; }
+  input[type=file] { display:none; }
+
+  button {
+    background:var(--accent); color:#fff; border:0; border-radius:8px;
+    padding:9px 17px; font-size:14px; font-weight:500; cursor:pointer;
+  }
+  button:disabled { opacity:.4; cursor:not-allowed; }
+  button.ghost { background:var(--panel-2); color:var(--ink); border:1px solid var(--line); }
+  button.small { padding:5px 11px; font-size:13px; }
+
+  .files { display:grid; gap:6px; margin:12px 0; }
+  .file {
+    display:flex; align-items:center; gap:10px; font-size:13px;
+    background:var(--panel-2); padding:7px 11px; border-radius:7px;
+  }
+  .file .name { flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .file .meta { color:var(--muted); font-size:12px; font-variant-numeric:tabular-nums; }
+
+  .bar { height:4px; background:var(--panel-2); border-radius:3px; overflow:hidden; margin:12px 0 8px; }
+  .bar > i { display:block; height:100%; background:var(--accent); width:0; transition:width .3s; }
+  .status { font-size:13px; color:var(--muted); min-height:19px; }
+
+  .grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(190px,1fr)); gap:14px; margin-top:14px; }
+  .stat { background:var(--panel-2); border-radius:8px; padding:11px 13px; }
+  .stat .k { font-size:11px; text-transform:uppercase; letter-spacing:.6px; color:var(--muted); }
+  .stat .v { font-size:16px; margin-top:3px; font-variant-numeric:tabular-nums; }
+  .summary { background:var(--panel-2); border-radius:8px; padding:14px 16px; margin-top:14px; font-size:14px; }
+
+  .gap {
+    background:#1e1a10; border:1px solid #3d3113; border-left:3px solid var(--warn);
+    border-radius:7px; padding:11px 14px; margin:8px 0; font-size:13.5px;
+  }
+  .gap b { color:var(--warn); font-weight:600; }
+  .pill {
+    display:inline-block; font-size:11px; padding:2px 8px; border-radius:20px;
+    background:var(--panel-2); color:var(--muted); margin-left:8px;
+  }
+  .pill.warn { background:#3d3113; color:var(--warn); }
+  .pill.ok { background:#12261a; color:var(--ok); }
+
+  video { width:100%; max-width:340px; border-radius:var(--radius); background:#000; display:block; }
+  .preview-row { display:flex; gap:22px; flex-wrap:wrap; align-items:flex-start; }
+  .slots { flex:1; min-width:290px; max-height:430px; overflow:auto; }
+  .slot {
+    display:flex; align-items:center; gap:10px; padding:8px 11px;
+    border-radius:7px; font-size:13px; cursor:pointer; border:1px solid transparent;
+  }
+  .slot:hover { background:var(--panel-2); border-color:var(--line); }
+  .slot .i { color:var(--muted); font-variant-numeric:tabular-nums; width:26px; flex:none; }
+  .slot .seg { flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .slot .sc { color:var(--muted); font-variant-numeric:tabular-nums; }
+  .slot.locked { border-color:var(--accent); }
+
+  .alts { margin-left:36px; display:grid; gap:5px; padding:8px 0; }
+  .alt {
+    display:flex; align-items:center; gap:10px; font-size:12.5px;
+    background:var(--panel-2); padding:7px 10px; border-radius:6px;
+  }
+  .alt .why { flex:1; color:var(--muted); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+
+  .note {
+    margin-top:16px; padding:13px 15px; background:#10161e;
+    border:1px solid #1d2a3a; border-radius:8px; font-size:13.5px;
+  }
+  .note h3 { margin:0 0 6px; font-size:13px; }
+  .note .fine { color:var(--muted); font-size:12.5px; margin-top:7px; }
+  .err {
+    background:#2a1315; border:1px solid #5c2126; color:#ffb4b4;
+    padding:11px 14px; border-radius:8px; font-size:13.5px; margin-top:12px;
+  }
+  .hidden { display:none; }
+  code { background:var(--panel-2); padding:1px 5px; border-radius:4px; font-size:12.5px; }
+</style>
+</head>
+<body>
+<header>
+  <h1>ReelsEdits</h1>
+  <span class="tag">Point at an edit you admire. Get that craft on your own footage.</span>
+</header>
+
+<main>
+<div class="steps">
+
+  <!-- 1 ------------------------------------------------------------------ -->
+  <section class="card" id="c1">
+    <h2><span class="num">1</span> Reference video</h2>
+    <p class="hint">The edit whose style you want. We analyse how it was cut — we never copy its footage.</p>
+    <div class="body">
+      <div class="drop" id="refDrop">Drop a video here, or click to choose</div>
+      <input type="file" id="refInput" accept="video/*">
+      <div class="files" id="refList"></div>
+      <div class="bar hidden" id="refBar"><i></i></div>
+      <div class="status" id="refStatus"></div>
+    </div>
+  </section>
+
+  <!-- 2 ------------------------------------------------------------------ -->
+  <section class="card hidden" id="c2">
+    <h2><span class="num">2</span> Style card</h2>
+    <p class="hint">What we found. If this doesn't sound like the reference, the rest won't work either.</p>
+    <div class="body" id="styleCard"></div>
+  </section>
+
+  <!-- 3 ------------------------------------------------------------------ -->
+  <section class="card hidden" id="c3">
+    <h2><span class="num">3</span> Your footage</h2>
+    <p class="hint">Several clips work better than one. We split long takes and use the usable parts.</p>
+    <div class="body">
+      <div class="drop" id="clipDrop">Drop clips here, or click to choose</div>
+      <input type="file" id="clipInput" accept="video/*" multiple>
+      <div class="files" id="clipList"></div>
+      <button id="indexBtn" disabled>Analyse my footage</button>
+      <div class="bar hidden" id="clipBar"><i></i></div>
+      <div class="status" id="clipStatus"></div>
+    </div>
+  </section>
+
+  <!-- 4 ------------------------------------------------------------------ -->
+  <section class="card hidden" id="c4">
+    <h2><span class="num">4</span> Coverage</h2>
+    <p class="hint">Whether your clips can actually carry this style — checked before we render, not after.</p>
+    <div class="body" id="coverage"></div>
+    <div class="body" style="margin-top:14px">
+      <button id="renderBtn">Make the video</button>
+      <button id="forceBtn" class="ghost hidden">Render anyway</button>
+      <div class="bar hidden" id="rBar"><i></i></div>
+      <div class="status" id="rStatus"></div>
+    </div>
+  </section>
+
+  <!-- 5 ------------------------------------------------------------------ -->
+  <section class="card hidden" id="c5">
+    <h2><span class="num">5</span> Result</h2>
+    <p class="hint">Click any cut to see why that clip was chosen, and swap it.</p>
+    <div class="body">
+      <div class="preview-row">
+        <div>
+          <video id="player" controls playsinline></video>
+          <div style="margin-top:11px; display:flex; gap:8px;">
+            <a id="dl" download><button class="small">Download</button></a>
+            <button class="small ghost" id="reRender">Re-render</button>
+          </div>
+        </div>
+        <div class="slots" id="slots"></div>
+      </div>
+      <div id="musicNote"></div>
+    </div>
+  </section>
+
+</div>
+<div id="errors"></div>
+</main>
+
+<script>
+const $ = s => document.querySelector(s);
+const api = async (path, opts = {}) => {
+  const r = await fetch(path, opts);
+  const body = await r.json().catch(() => ({}));
+  if (!r.ok) throw new Error(body.detail || body.title || `HTTP ${r.status}`);
+  return body;
+};
+
+const state = { projectId: null, blueprintId: null, refAsset: null, clips: [], renderId: null };
+
+function fail(msg) {
+  $("#errors").innerHTML = `<div class="err"><b>Something went wrong.</b><br>${msg}</div>`;
+}
+function show(id) { $(id).classList.remove("hidden"); }
+function done(id) { $(id).classList.add("done"); }
+function fmtMs(ms) { return (ms / 1000).toFixed(1) + "s"; }
+function fmtBytes(b) { return b > 1e6 ? (b / 1e6).toFixed(1) + " MB" : Math.round(b / 1e3) + " KB"; }
+
+/* Progress arrives over SSE with a human stage description rather than only a
+   percentage — during a 40s wait "Tracking the beat" reads as work, a bar
+   reads as a hang. */
+function follow(jobId, barSel, statusSel) {
+  return new Promise((resolve, reject) => {
+    const bar = $(barSel), status = $(statusSel);
+    bar.classList.remove("hidden");
+    const es = new EventSource(`/v1/jobs/${jobId}/events`);
+    const onStage = e => {
+      const d = JSON.parse(e.data);
+      bar.querySelector("i").style.width = Math.round((d.progress || 0) * 100) + "%";
+      if (d.detail) status.textContent = d.detail;
+    };
+    es.addEventListener("stage", onStage);
+    es.addEventListener("complete", e => {
+      bar.querySelector("i").style.width = "100%";
+      es.close(); resolve(JSON.parse(e.data));
+    });
+    es.addEventListener("failed", e => {
+      es.close(); reject(new Error(JSON.parse(e.data).error || "job failed"));
+    });
+    es.onerror = () => { es.close(); reject(new Error("lost connection to the server")); };
+  });
+}
+
+function wireDrop(dropSel, inputSel, handler) {
+  const drop = $(dropSel), input = $(inputSel);
+  drop.onclick = () => input.click();
+  input.onchange = () => handler([...input.files]);
+  drop.ondragover = e => { e.preventDefault(); drop.classList.add("over"); };
+  drop.ondragleave = () => drop.classList.remove("over");
+  drop.ondrop = e => {
+    e.preventDefault(); drop.classList.remove("over");
+    handler([...e.dataTransfer.files].filter(f => f.type.startsWith("video/")));
+  };
+}
+
+async function upload(file, kind) {
+  const fd = new FormData();
+  fd.append("file", file);
+  fd.append("kind", kind);
+  fd.append("project_id", state.projectId);
+  return api("/v1/assets", { method: "POST", body: fd });
+}
+
+/* --- 1. reference ------------------------------------------------------- */
+wireDrop("#refDrop", "#refInput", async files => {
+  if (!files.length) return;
+  const file = files[0];
+  $("#errors").innerHTML = "";
+  $("#refList").innerHTML = `<div class="file"><span class="name">${file.name}</span>
+    <span class="meta">${fmtBytes(file.size)}</span></div>`;
+  $("#refStatus").textContent = "Uploading…";
+
+  try {
+    const project = await api("/v1/projects", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name: file.name.replace(/\.[^.]+$/, "") }),
+    });
+    state.projectId = project.id;
+
+    state.refAsset = await upload(file, "reference");
+    const job = await api(`/v1/projects/${state.projectId}/reference`, {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ asset_id: state.refAsset.id }),
+    });
+
+    const out = await follow(job.job_id, "#refBar", "#refStatus");
+    state.blueprintId = out.blueprint_id;
+    $("#refStatus").textContent = out.cache_hit
+      ? "Analysed already — reused the blueprint."
+      : `Done — ${out.shots} shots at ${Math.round(out.bpm)} BPM.`;
+    done("#c1");
+    await renderStyleCard();
+    show("#c2"); show("#c3");
+  } catch (e) { fail(e.message); $("#refStatus").textContent = ""; }
+});
+
+/* --- 2. style card ------------------------------------------------------ */
+async function renderStyleCard() {
+  const c = await api(`/v1/blueprints/${state.blueprintId}/style-card`);
+  const pace = c.pacing;
+  const mix = Object.entries(c.shot_scale_mix).sort((a, b) => b[1] - a[1]).slice(0, 4)
+    .map(([k, v]) => `${k.replace(/_/g, " ")} ${Math.round(v * 100)}%`).join(" · ");
+  const approx = c.low_confidence_subsystems.length
+    ? `<span class="pill warn">approximate: ${c.low_confidence_subsystems.join(", ")}</span>` : "";
+
+  $("#styleCard").innerHTML = `
+    <div class="summary">${c.summary}</div>
+    <div class="grid">
+      <div class="stat"><div class="k">Pacing</div><div class="v">${pace.cuts_per_second.toFixed(2)} cuts/sec</div></div>
+      <div class="stat"><div class="k">Tempo</div><div class="v">${Math.round(c.bpm)} BPM</div></div>
+      <div class="stat"><div class="k">Beat lock</div><div class="v">${Math.round(pace.beat_lock_ratio * 100)}%</div></div>
+      <div class="stat"><div class="k">Cut offset</div><div class="v">${pace.offset_mean_ms.toFixed(0)} ms</div></div>
+      <div class="stat"><div class="k">Cuts</div><div class="v">${c.slot_count} shots</div></div>
+      <div class="stat"><div class="k">Length</div><div class="v">${fmtMs(c.duration_ms)}</div></div>
+    </div>
+    <p class="hint" style="margin:14px 0 0 0">Shot mix: ${mix} ${approx}</p>
+    <p class="hint" style="margin:6px 0 0 0">Cuts land <b>${Math.abs(pace.offset_mean_ms).toFixed(0)}ms before</b>
+       the beat — that's what makes an edit feel tight rather than mechanical.</p>`;
+}
+
+/* --- 3. footage --------------------------------------------------------- */
+wireDrop("#clipDrop", "#clipInput", files => {
+  state.pending = (state.pending || []).concat(files);
+  $("#clipList").innerHTML = state.pending.map(f =>
+    `<div class="file"><span class="name">${f.name}</span>
+     <span class="meta">${fmtBytes(f.size)}</span></div>`).join("");
+  $("#indexBtn").disabled = !state.pending.length;
+});
+
+$("#indexBtn").onclick = async () => {
+  $("#indexBtn").disabled = true;
+  $("#errors").innerHTML = "";
+  try {
+    $("#clipStatus").textContent = "Uploading…";
+    for (const [i, f] of state.pending.entries()) {
+      $("#clipStatus").textContent = `Uploading ${i + 1} of ${state.pending.length}…`;
+      state.clips.push(await upload(f, "clip"));
+    }
+    const job = await api(`/v1/projects/${state.projectId}/index`, { method: "POST" });
+    const out = await follow(job.job_id, "#clipBar", "#clipStatus");
+    $("#clipStatus").textContent = `${out.indexed} clips → ${out.segments} usable shots.`;
+    if (out.failed?.length) {
+      $("#clipStatus").textContent += `  (${out.failed.length} could not be read)`;
+    }
+    done("#c3");
+    await renderCoverage();
+    show("#c4");
+  } catch (e) { fail(e.message); $("#indexBtn").disabled = false; }
+};
+
+/* --- 4. coverage -------------------------------------------------------- */
+async function renderCoverage() {
+  const c = await api(`/v1/projects/${state.projectId}/coverage`);
+  const pct = Math.round(c.overall * 100);
+  const cls = c.verdict === "good" ? "ok" : c.verdict === "degraded" ? "warn" : "warn";
+
+  /* Gaps name the specific missing shot. "You need a shot with strong
+     left-to-right motion" sends someone out to film; "insufficient footage"
+     makes them leave. */
+  const gaps = c.gaps.length
+    ? c.gaps.map(g => `<div class="gap"><b>${g.severity}</b> — ${g.message}
+        <span class="pill">${g.slots.length} cut${g.slots.length > 1 ? "s" : ""}</span></div>`).join("")
+    : `<p class="hint" style="margin-left:0">Your footage covers this style.</p>`;
+
+  $("#coverage").innerHTML = `
+    <div class="grid">
+      <div class="stat"><div class="k">Coverage</div><div class="v">${pct}% <span class="pill ${cls}">${c.verdict}</span></div></div>
+      <div class="stat"><div class="k">Usable shots</div><div class="v">${c.segment_count}</div></div>
+      <div class="stat"><div class="k">Cuts to fill</div><div class="v">${c.per_slot.length}</div></div>
+    </div>${gaps}`;
+
+  $("#forceBtn").classList.toggle("hidden", !c.requires_acknowledgement);
+  $("#renderBtn").classList.toggle("hidden", c.requires_acknowledgement);
+}
+
+async function doRender(force) {
+  $("#errors").innerHTML = "";
+  $("#renderBtn").disabled = $("#forceBtn").disabled = true;
+  try {
+    const job = await api(`/v1/projects/${state.projectId}/render`, {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ preset: "preview", acknowledge_degradation: !!force }),
+    });
+    const out = await follow(job.job_id, "#rBar", "#rStatus");
+    state.renderId = out.render_id;
+    $("#rStatus").textContent = out.cache_hit
+      ? "Nothing changed — reused the previous render."
+      : `Done — ${fmtMs(out.duration_ms)}, ${fmtBytes(out.bytes)}.`;
+    done("#c4");
+    await showResult(out);
+    show("#c5");
+    $("#c5").scrollIntoView({ behavior: "smooth", block: "start" });
+  } catch (e) { fail(e.message); }
+  $("#renderBtn").disabled = $("#forceBtn").disabled = false;
+}
+$("#renderBtn").onclick = () => doRender(false);
+$("#forceBtn").onclick = () => doRender(true);
+$("#reRender").onclick = () => doRender(true);
+
+/* --- 5. result & swapping ---------------------------------------------- */
+async function showResult(out) {
+  const url = out.url + "?t=" + Date.now();   // defeat the cache after a swap
+  $("#player").src = url;
+  $("#dl").href = url;
+
+  const r = await api(`/v1/renders/${state.renderId}`);
+  $("#slots").innerHTML = r.assignment.map(a => `
+    <div class="slot" data-slot="${a.slot}">
+      <span class="i">${a.slot}</span>
+      <span class="seg">${a.segment_id.replace(/^seg_ast_/, "")}</span>
+      <span class="sc">${a.score.toFixed(2)}</span>
+    </div>
+    <div class="alts hidden" id="alts-${a.slot}"></div>`).join("");
+
+  $("#slots").querySelectorAll(".slot").forEach(el => {
+    el.onclick = () => toggleAlts(parseInt(el.dataset.slot, 10));
+  });
+
+  const d = r.degradation || {};
+  const music = (d.compromises || []).find(c => c.kind === "platform_attach");
+  $("#musicNote").innerHTML = music ? `
+    <div class="note">
+      <h3>Music — add it in the app</h3>
+      <div>${music.detail}</div>
+      <div class="fine">This file has no music track. We never redistribute the original
+      recording; the platform's own licence covers it when you add it there. Because the
+      cuts are on that track's beat grid, it lines up.</div>
+    </div>` : "";
+}
+
+async function toggleAlts(slot) {
+  const box = $(`#alts-${slot}`);
+  if (!box.classList.contains("hidden")) { box.classList.add("hidden"); return; }
+
+  box.classList.remove("hidden");
+  box.innerHTML = `<div class="alt"><span class="why">Loading…</span></div>`;
+  const data = await api(`/v1/projects/${state.projectId}/slots/${slot}/alternatives?limit=6`);
+
+  /* Every alternative shows the reason it was ranked. An explained choice
+     produces an informed correction; an unexplained one produces a random
+     click — and the correction is the training signal. */
+  box.innerHTML = data.alternatives.map(a => `
+    <div class="alt">
+      <span class="why"><b>${a.score.toFixed(2)}</b> ${a.reason}</span>
+      <button class="small ghost" data-seg="${a.segment_id}" data-slot="${slot}">
+        ${a.segment_id === data.slot.current ? "current" : "use this"}
+      </button>
+    </div>`).join("");
+
+  box.querySelectorAll("button[data-seg]").forEach(b => {
+    b.onclick = async () => {
+      b.disabled = true; b.textContent = "…";
+      try {
+        await api(`/v1/projects/${state.projectId}/assignment`, {
+          method: "PATCH", headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ slot: +b.dataset.slot, segment_id: b.dataset.seg }),
+        });
+        await doRender(true);
+      } catch (e) { fail(e.message); b.disabled = false; b.textContent = "use this"; }
+    };
+  });
+}
+</script>
+</body>
+</html>

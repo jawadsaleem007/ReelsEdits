@@ -77,46 +77,59 @@ ReelsEdits/
 │   ├── planner/             # CPU/LLM worker: blueprint synthesis & re-planning
 │   ├── matcher/             # clip ↔ slot assignment (chain DP + repair)
 │   ├── renderer/            # blueprint + clips → MP4 (FFmpeg, deterministic)
+│   ├── api/                 # FastAPI + job runner + web UI (app/static)
 │   └── cli/                 # `reelsedits analyze | index | build`
 ├── infra/                   # docker-compose, Dockerfiles, k8s, Terraform sketch
 ├── tools/                   # check_links.py and other repo utilities
 └── web/                     # Next.js 15 app — upload, timeline, preview, export
 ```
 
-## Try it
+## Development
 
 ```bash
-# ffmpeg with libx264 is required
-pip install -e services/common -e services/matcher -e services/analyzer \
-            -e services/indexer -e services/renderer -e services/cli
-
-reelsedits analyze reference.mp4          # → style card + blueprint.json
-reelsedits index   my-clips/              # → segments, quality, shot scales
-reelsedits build   reference.mp4 my-clips/ -o out.mp4 --show-matches
+make install     # venv + all packages, editable
+make run         # http://localhost:8000
+make test-fast   # schema + matcher, seconds
+make test        # full suite, renders real video
+make lint
 ```
 
-`build` refuses to render below 0.55 coverage unless you pass `--force`, and names
-what footage is missing. Silent bad output is the worst failure mode in this
-product, so it is not a default.
+Both the UI and the CLI refuse to render below 0.55 coverage unless you explicitly
+accept degradation, and they name the footage that is missing. Silent bad output is
+the worst failure mode in this product, so it is not a default.
 
 ---
 
-## Status
+## Run it
 
-**Alpha — the pipeline runs end to end and produces a real video.**
+You need **Python 3.10+** and **ffmpeg** (with libx264) on your PATH. Nothing else.
 
 ```bash
-pip install -e services/common -e services/matcher \
-            -e services/analyzer -e services/indexer -e services/renderer -e services/cli
-
-reelsedits build reference.mp4 my-clips/ -o out.mp4
+./run.sh                 # macOS / Linux
+.\run.ps1                # Windows
 ```
 
-That command analyses the reference into a blueprint, indexes your footage, matches clips to slots, and renders an MP4. What works today: beat and tempo tracking, section structure and drop detection, shot-boundary detection with gradual-transition intervals, camera-motion classification and motion-energy curves, colour-grade measurement, blueprint assembly, constrained clip matching, and deterministic FFmpeg rendering.
+Then open **http://localhost:8000** and drag in a reference video and some clips. First run builds a virtualenv and takes a couple of minutes; after that it starts instantly.
 
-What is still a v0 baseline: the analysis models. librosa stands in for Demucs + a transformer beat tracker; histogram differencing stands in for the TransNetV2 + AutoShot ensemble; Farneback flow stands in for SEA-RAFT; there is no VLM, so `subject_class` is unset and semantic matching is inactive. [docs/07](docs/07-model-recommendations.md) specifies the replacements — and because the blueprint schema is frozen, swapping them in changes function bodies, not contracts.
+There is also a CLI, if you prefer:
 
-The API service and GPU worker topology are scaffolded but not wired to datastores. See [docs/20](docs/20-implementation-plan.md).
+```bash
+reelsedits analyze reference.mp4                            # style card + blueprint.json
+reelsedits index   my-clips/                                # segments, quality, shot scales
+reelsedits build   reference.mp4 my-clips/ -o out.mp4       # the whole thing
+```
+
+## Status
+
+**Alpha — it is a working application.** Upload a reference and footage in a browser, watch the analysis progress, read the style card, see which shots you're missing, render, swap clips you don't like, download the file.
+
+| | |
+|---|---|
+| **Working** | Web UI · REST API · background jobs with live progress · SQLite/Postgres persistence · blueprint caching (~19× faster on a repeat reference) · coverage report with an actionable shoot list · clip swapping with preference logging · deterministic rendering · quota enforcement |
+| **v0 baseline** | The analysis *models*. librosa stands in for Demucs + a transformer beat tracker; histogram differencing for the TransNetV2 + AutoShot ensemble; Farneback flow for SEA-RAFT. No VLM yet, so `subject_class` is unset and semantic matching is inactive — matching runs on scale, motion and quality alone. |
+| **Not built** | Accounts and login (single local org), S3 and multi-node deployment (interfaces exist, local disk is wired), the marketplace, the licensed-music catalogue. |
+
+Because the blueprint schema is frozen, swapping the real models in changes function bodies rather than contracts. [docs/07](docs/07-model-recommendations.md) specifies each replacement; [docs/20](docs/20-implementation-plan.md) has the order.
 
 ## Three honest caveats
 

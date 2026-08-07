@@ -52,6 +52,22 @@ jobs:
           PYTHONPATH=services/common:services/matcher:services/analyzer:services/indexer:services/renderer \
             python -m pytest services/analyzer/tests -q --durations=10
 
+  api:
+    name: API end-to-end
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12" }
+      - run: sudo apt-get update && sudo apt-get install -y ffmpeg
+      - run: |
+          pip install -e services/common -e services/matcher -e services/analyzer \
+                      -e services/indexer -e services/renderer -e services/api
+      # Drives the app exactly as the browser does: upload, analyse, index,
+      # coverage, render, swap, download. If this passes, the product works.
+      - run: PYTHONPATH=services/common:services/matcher:services/analyzer:services/indexer:services/renderer:services/api
+               python -m pytest services/api/tests -q --durations=10
+
   lint:
     runs-on: ubuntu-latest
     steps:

@@ -45,9 +45,12 @@ async def require_principal(
     check is the fast path; RLS is the backstop for the day a worker query
     forgets a WHERE clause. docs/11 section 3.
     """
-    if settings.dev_auth_bypass and settings.environment == "local":
+    # Local single-user mode: one default org, no login. The tenancy boundary
+    # is still enforced everywhere (every query filters on org_id), so adding
+    # real auth is a change to this function rather than to every handler.
+    if settings.environment == "local":
         return Principal(
-            user_id="usr_dev", org_id="org_dev", plan="pro", role="owner",
+            user_id="local", org_id="default", plan="pro", role="owner",
             scopes=frozenset({"render", "upload", "publish", "billing"}),
         )
 

@@ -23,7 +23,11 @@ class Settings(BaseSettings):
     service_name: str = "reelsedits-api"
 
     # --- datastores ---------------------------------------------------------
-    database_url: str = "postgresql+asyncpg://reelsedits:reelsedits@localhost:5432/reelsedits"
+    #: SQLite by default so the app runs with zero infrastructure. The models
+    #: are Postgres-compatible; point this at Postgres in production.
+    database_url: str = "sqlite:///./reelsedits.db"
+    storage_root: str = "./data/storage"
+    worker_concurrency: int = 2
     redis_url: str = "redis://localhost:6379/0"
     qdrant_url: str | None = None
     clickhouse_url: str | None = None

@@ -29,6 +29,12 @@ ignore = [
   "PLC0415",
 
   "B008",
+
+  # Module-level singletons for the engine, storage backend and job runner are
+  # initialised once in the app lifespan and read everywhere. `global` is the
+  # honest way to express that; the alternative is a container class that adds
+  # indirection without removing the shared state.
+  "PLW0603",
   "UP042",    # StrEnum backport is 3.10-compatible; std StrEnum is 3.11+
   "RUF001", "RUF002",   # typographic quotes and dashes in prose docstrings
 ]

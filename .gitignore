@@ -59,6 +59,13 @@ data/
 scratch/
 tmp/
 
+# --- App runtime (generated) ---
+data/
+*.db
+*.db-wal
+*.db-shm
+.venv/
+
 # --- Infra ---
 .terraform/
 *.tfstate
