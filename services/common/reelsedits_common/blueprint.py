@@ -27,7 +27,6 @@ from pydantic import (
     BaseModel,
     ConfigDict,
     Field,
-    ValidationInfo,
     field_validator,
     model_validator,
 )
@@ -163,7 +162,7 @@ class AudioSection(_Base):
     label: str | None = None
 
     @model_validator(mode="after")
-    def _ordered(self) -> "AudioSection":
+    def _ordered(self) -> AudioSection:
         if self.t_out_ms <= self.t_in_ms:
             raise ValueError(
                 f"section {self.kind}: t_out_ms ({self.t_out_ms}) must exceed "
@@ -211,18 +210,58 @@ class SfxEvent(_Base):
     model_config = ConfigDict(extra="forbid", populate_by_name=True)
 
 
-class MusicBinding(_Base):
-    """How the skeleton becomes real, licensed audio.
+class PlatformAttachCard(_Base):
+    """Instructions for re-attaching the original sound inside the platform.
 
-    There is no strategy for reusing the reference's track, and adding one
-    would be a breaking schema change requiring deliberate action. That is the
-    intent.
+    The edit was cut to the reference track's real beat grid, so when the
+    creator selects that sound in TikTok/Instagram it re-syncs exactly -- but
+    only if they trim the sound to the right start point. These fields are what
+    make that a one-tap operation instead of a fiddly one.
+
+    Note what is NOT here: no audio, no download URL, no track file. Only the
+    identifiers a human would read off the screen themselves, and the arithmetic
+    for lining it up.
+    """
+
+    #: Platform-native sound identifier, as displayed to the user. We surface
+    #: what the reference itself credits; we do not fetch or host the audio.
+    sound_name: str | None = Field(default=None, max_length=300)
+    platform: Literal["tiktok", "instagram", "youtube", "unknown"] = "unknown"
+
+    #: Offset into the platform track where our first frame sits. This is the
+    #: number the creator types into the platform's sound-trim control.
+    trim_start_ms: int = Field(default=0, ge=0)
+    #: Where the first downbeat lands in OUR output, so the creator can verify
+    #: alignment visually rather than by ear.
+    first_downbeat_ms: int = Field(default=0, ge=0)
+    bpm: float | None = Field(default=None, gt=20, le=300)
+
+    instructions: str = Field(
+        default=(
+            "Export, upload to the app, then add the original sound and set its "
+            "start point to the trim offset shown. The cuts will land on the beat."
+        ),
+        max_length=600,
+    )
+
+
+class MusicBinding(_Base):
+    """How the rhythmic skeleton becomes real audio.
+
+    There is no strategy that muxes the reference's master recording into the
+    export. Adding one would be a breaking schema change requiring deliberate
+    action, and that friction is intentional.
+
+    ``platform_attach`` is how a user gets the original track: we render a
+    silent master and they attach the sound in-app, under the platform's own
+    licence. We never redistribute the recording.
     """
 
     strategy: MusicStrategy
     track_id: str | None = None
     licence_id: str | None = None
     match_score: float | None = Field(default=None, ge=0, le=1)
+    platform_attach: PlatformAttachCard | None = None
     time_map: list[tuple[int, int]] = Field(
         default_factory=list,
         description="(blueprint_ms, track_ms) anchors. Warps the EDIT to the track, "
@@ -230,7 +269,7 @@ class MusicBinding(_Base):
     )
 
     @model_validator(mode="after")
-    def _licence_present(self) -> "MusicBinding":
+    def _strategy_consistent(self) -> MusicBinding:
         if self.strategy.requires_licence and not self.licence_id:
             raise ValueError(
                 f"music strategy '{self.strategy.value}' requires a licence_id; "
@@ -238,6 +277,18 @@ class MusicBinding(_Base):
             )
         if self.strategy is MusicStrategy.CATALOGUE_MATCH and not self.track_id:
             raise ValueError("catalogue_match requires a track_id")
+        if self.strategy is MusicStrategy.PLATFORM_ATTACH:
+            if self.platform_attach is None:
+                raise ValueError(
+                    "platform_attach requires a PlatformAttachCard; without the trim "
+                    "offset the creator cannot re-sync the sound and the edit lands "
+                    "off the beat"
+                )
+            if self.licence_id is not None:
+                raise ValueError(
+                    "platform_attach must not carry a licence_id: we are not "
+                    "licensing anything, the platform is"
+                )
         return self
 
     def map_time(self, bp_ms: int) -> int:
@@ -280,7 +331,7 @@ class AudioTrack(_Base):
         return v
 
     @model_validator(mode="after")
-    def _sections_contiguous(self) -> "AudioTrack":
+    def _sections_contiguous(self) -> AudioTrack:
         ordered = sorted(self.sections, key=lambda s: s.t_in_ms)
         for a, b in zip(ordered, ordered[1:]):
             if b.t_in_ms < a.t_out_ms:
@@ -408,7 +459,7 @@ class Assignment(_Base):
     locked: bool = False
 
     @model_validator(mode="after")
-    def _ordered(self) -> "Assignment":
+    def _ordered(self) -> Assignment:
         if self.out_ms <= self.in_ms:
             raise ValueError(f"assignment out_ms ({self.out_ms}) must exceed in_ms ({self.in_ms})")
         return self
@@ -431,7 +482,7 @@ class Slot(_Base):
     assignment: Assignment | None = None
 
     @model_validator(mode="after")
-    def _ordered(self) -> "Slot":
+    def _ordered(self) -> Slot:
         if self.t_out_ms <= self.t_in_ms:
             raise ValueError(f"slot {self.index}: t_out_ms must exceed t_in_ms")
         return self
@@ -469,7 +520,7 @@ class Cut(_Base):
     to_slot: int | None = Field(default=None, ge=0)
 
     @model_validator(mode="after")
-    def _anchor_present(self) -> "Cut":
+    def _anchor_present(self) -> Cut:
         if self.mode in (CutMode.ON_BEAT, CutMode.SUBDIVIDED) and self.beat_index is None:
             raise ValueError(f"cut {self.index}: mode '{self.mode}' requires beat_index")
         if self.mode is CutMode.SUBDIVIDED and self.subdivision is None:
@@ -494,7 +545,7 @@ class Transition(_Base):
     fallback: TransitionType | None = None
 
     @model_validator(mode="after")
-    def _direction_required(self) -> "Transition":
+    def _direction_required(self) -> Transition:
         if self.type.needs_direction and self.direction_deg is None:
             raise ValueError(
                 f"transition '{self.type.value}' requires direction_deg; without it "
@@ -546,7 +597,7 @@ class SpeedTrack(_Base):
     confidence: Confidence = 1.0
 
     @model_validator(mode="after")
-    def _mode_consistent(self) -> "SpeedTrack":
+    def _mode_consistent(self) -> SpeedTrack:
         if self.mode is SpeedMode.RAMP and len(self.keyframes) < 2:
             raise ValueError("mode 'ramp' requires at least 2 keyframes")
         if self.mode is SpeedMode.FREEZE and self.freeze_at_ms is None:
@@ -570,7 +621,7 @@ class EffectInstance(_Base):
     confidence: Confidence = 1.0
 
     @model_validator(mode="after")
-    def _scope_target(self) -> "EffectInstance":
+    def _scope_target(self) -> EffectInstance:
         need = {"slot": "slot", "section": "section"}.get(self.scope)
         if need and getattr(self, need) is None:
             raise ValueError(f"effect scope '{self.scope}' requires field '{need}'")
@@ -731,7 +782,7 @@ class CaptionTrack(_Base):
     confidence: Confidence = 1.0
 
     @model_validator(mode="after")
-    def _karaoke_needs_active_style(self) -> "CaptionTrack":
+    def _karaoke_needs_active_style(self) -> CaptionTrack:
         if self.mode is CaptionMode.KARAOKE and self.active_word_style is None:
             raise ValueError(
                 "karaoke mode requires active_word_style; without it the highlighted "
@@ -811,7 +862,7 @@ class Degradation(_Base):
     coverage: Unit = 1.0
 
     @model_validator(mode="after")
-    def _flag_consistent(self) -> "Degradation":
+    def _flag_consistent(self) -> Degradation:
         if self.compromises and not self.degraded:
             raise ValueError(
                 "compromises recorded but degraded=False; a degraded render that "
@@ -854,7 +905,7 @@ class Blueprint(_Base):
     # ---- cross-field invariants JSON Schema cannot express ----------------
 
     @model_validator(mode="after")
-    def _slots_ordered_and_indexed(self) -> "Blueprint":
+    def _slots_ordered_and_indexed(self) -> Blueprint:
         for i, s in enumerate(self.slots):
             if s.index != i:
                 raise ValueError(f"slots[{i}].index is {s.index}; must equal position")
@@ -867,7 +918,7 @@ class Blueprint(_Base):
         return self
 
     @model_validator(mode="after")
-    def _cuts_ordered_and_indexed(self) -> "Blueprint":
+    def _cuts_ordered_and_indexed(self) -> Blueprint:
         for i, c in enumerate(self.cuts):
             if c.index != i:
                 raise ValueError(f"cuts[{i}].index is {c.index}; must equal position")
@@ -877,7 +928,7 @@ class Blueprint(_Base):
         return self
 
     @model_validator(mode="after")
-    def _references_resolvable(self) -> "Blueprint":
+    def _references_resolvable(self) -> Blueprint:
         n_slots, n_cuts = len(self.slots), len(self.cuts)
         n_sections = len(self.audio.sections)
 
@@ -914,7 +965,7 @@ class Blueprint(_Base):
         return self
 
     @model_validator(mode="after")
-    def _within_canvas_duration(self) -> "Blueprint":
+    def _within_canvas_duration(self) -> Blueprint:
         if self.slots[-1].t_out_ms > self.canvas.duration_ms:
             raise ValueError(
                 f"last slot ends at {self.slots[-1].t_out_ms}ms, beyond canvas "
@@ -923,7 +974,7 @@ class Blueprint(_Base):
         return self
 
     @model_validator(mode="after")
-    def _min_shot_respected(self) -> "Blueprint":
+    def _min_shot_respected(self) -> Blueprint:
         for s in self.slots:
             if s.duration_ms < self.constraints.min_shot_ms:
                 raise ValueError(

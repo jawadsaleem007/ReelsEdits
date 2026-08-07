@@ -39,7 +39,7 @@ Not policies. Structural properties, enforced in code:
 | No reference media can enter a blueprint | `extra="forbid"` on every model in [`blueprint.py`](../services/common/reelsedits_common/blueprint.py); no field can hold binary data |
 | No reference media can reach a render | [`source_manifest_ok()`](../services/renderer/reelsedits_renderer/determinism.py) raises unless every input is a user upload or a licensed asset |
 | Reference words are never copied | `TextObject.content` defaults to `None`; the style transfers, the words are the user's |
-| Reference audio is never reused | `MusicStrategy` has no member for it, and adding one is a breaking schema change |
+| We never redistribute the reference's recording | `MusicStrategy` has no member that muxes it into an export; `platform_attach` gives the user the same track via the platform's own licence. Adding a passthrough member is a breaking schema change, and a test asserts the member set. |
 | Fetched references are deleted within 24h | `assets.retention_class = 'ephemeral_24h'` + indexed `expires_at` sweeper |
 | Extracted audio is deleted at end of analysis | Explicit, tested step in [`AudioStage`](../services/analyzer/reelsedits_analyzer/pipeline.py) |
 
@@ -98,9 +98,22 @@ The `time_map` then warps the *edit* to the licensed track rather than time-stre
 
 ## 4. Reference audio: what we will not do
 
-**No "use original sound" toggle.** Not as a paid feature, not for enterprise, not where a platform API might technically make it available.
+**We do not extract the reference's master recording and mux it into a user's export.** Not as a paid feature, not for enterprise, not where a platform API might technically make it available. That is distributing a copyrighted sound recording without a licence, and there is no version of it worth the company.
 
-The temptation will be real — users will ask for it, and it would measurably improve conversion. It is not worth the company. See [docs/16 §R3](16-risks.md), which treats music substitution rejection as a top-tier risk precisely *because* we will not take the easy escape.
+**What we do instead — `platform_attach`, and it is the default.** The user exports a silent master and attaches the original sound *inside* TikTok or Instagram, where the platform's own blanket licence covers it. Because we cut the edit to that track's real beat grid, it re-syncs exactly, and we hand the creator the trim offset so it lines up first time.
+
+This is worth being precise about, because it looks like a workaround and is not:
+
+| | Extract and mux | `platform_attach` |
+|---|---|---|
+| Who distributes the recording | **We do** | The platform, under its existing licence |
+| What the user gets | The track | The same track |
+| Sync quality | Exact | Exact (same beat grid) |
+| Our licensing exposure | **Severe** | None |
+
+The user outcome is identical. The legal position is not remotely. Where a workaround exists that is *both* safer and equally good for the user, taking it is not a compromise.
+
+The temptation will be real — users will ask for the file to just contain the song. See [docs/16 §R3](16-risks.md), which treats music rejection as a top-tier risk precisely *because* we will not take the easy escape. `platform_attach` substantially defuses that risk: the objection was never "I want a different track", it was "I want *that* track", and this gives them that track.
 
 ---
 

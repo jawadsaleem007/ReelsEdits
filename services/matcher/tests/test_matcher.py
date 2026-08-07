@@ -12,7 +12,6 @@ import json
 from pathlib import Path
 
 import pytest
-
 from reelsedits_common import Blueprint
 from reelsedits_common.enums import (
     CameraHeight,

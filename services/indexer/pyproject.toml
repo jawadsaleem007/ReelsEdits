@@ -1,0 +1,16 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "reelsedits-indexer"
+version = "0.2.0"
+description = "User footage indexing -- clips to matcher-ready Segments"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+# Depends on the analyzer deliberately: sharing the visual code is what
+# guarantees vocabulary parity between reference and footage (docs/09 s1.1).
+dependencies = ["reelsedits-common>=0.1.0", "reelsedits-analyzer>=0.2.0", "reelsedits-matcher>=0.1.0"]
+
+[tool.hatch.build.targets.wheel]
+packages = ["reelsedits_indexer"]

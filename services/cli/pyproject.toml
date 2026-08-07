@@ -1,0 +1,23 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "reelsedits-cli"
+version = "0.2.0"
+description = "ReelsEdits command-line interface"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+dependencies = [
+    "reelsedits-common>=0.1.0",
+    "reelsedits-analyzer>=0.2.0",
+    "reelsedits-indexer>=0.2.0",
+    "reelsedits-matcher>=0.1.0",
+    "reelsedits-renderer>=0.2.0",
+]
+
+[project.scripts]
+reelsedits = "reelsedits_cli.main:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["reelsedits_cli"]

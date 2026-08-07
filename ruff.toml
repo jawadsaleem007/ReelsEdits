@@ -1,0 +1,38 @@
+line-length = 100
+target-version = "py310"
+exclude = ["web", "node_modules"]
+
+[lint]
+select = ["E", "F", "I", "UP", "B", "SIM", "RUF", "PL"]
+ignore = [
+  "E501",     # length handled by the formatter
+  "EXE002",   # the dev mount does not preserve exec bits
+
+  # zip(xs, xs[1:]) is the idiom used throughout for adjacent-pair analysis
+  # (beat intervals, consecutive shots, keyframe spans). itertools.pairwise is
+  # 3.10+, and strict= would be wrong here: the slices are deliberately
+  # different lengths.
+  "B905", "RUF007",
+
+  # subprocess.run is called with capture_output and the return code is
+  # inspected explicitly, because ffmpeg's stderr is the useful diagnostic and
+  # CalledProcessError discards it.
+  "PLW1510",
+
+  # Analysis functions genuinely take many parameters and have wide branch
+  # factors -- the transition classifier is a decision tree by nature.
+  "PLR0913", "PLR0917", "PLR0912", "PLR0915", "PLR2004",
+
+  # Heavy imports (librosa, cv2, torch) are deferred into function bodies on
+  # purpose: at module scope they add ~2s to every CLI invocation, including
+  # --help and the schema-only paths that never touch them.
+  "PLC0415",
+
+  "B008",
+  "UP042",    # StrEnum backport is 3.10-compatible; std StrEnum is 3.11+
+  "RUF001", "RUF002",   # typographic quotes and dashes in prose docstrings
+]
+
+[lint.per-file-ignores]
+"**/tests/*" = ["PLR2004", "SIM117", "F401", "RUF059"]
+"schemas/examples/build_example.py" = ["F401", "E402"]

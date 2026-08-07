@@ -28,7 +28,7 @@ class ReferenceCreate(_Model):
     name: str | None = Field(default=None, max_length=200)
 
     @model_validator(mode="after")
-    def _one_source(self) -> "ReferenceCreate":
+    def _one_source(self) -> ReferenceCreate:
         if bool(self.source_url) == bool(self.asset_id):
             raise ValueError("provide exactly one of source_url or asset_id")
         return self

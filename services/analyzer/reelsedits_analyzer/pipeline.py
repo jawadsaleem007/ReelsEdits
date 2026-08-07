@@ -70,7 +70,7 @@ class StageResult:
 class Stage(Protocol):
     name: str
 
-    async def run(self, ctx: "AnalysisContext") -> StageResult: ...
+    async def run(self, ctx: AnalysisContext) -> StageResult: ...
 
 
 @dataclass

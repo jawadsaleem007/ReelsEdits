@@ -17,6 +17,7 @@ __all__ = [
     "MatchResult",
     "Segment",
     "SlotAssignment",
+    "__version__",
     "best_window",
     "build_candidates",
     "chain_dp",
@@ -27,5 +28,4 @@ __all__ = [
     "repair",
     "seq",
     "subject_compat",
-    "__version__",
 ]

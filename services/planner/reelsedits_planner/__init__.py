@@ -8,4 +8,4 @@ See docs/04-ai-pipeline.md stage 8.
 from .synthesis import PlannerConfig, synthesise_blueprint
 
 __version__ = "0.1.0"
-__all__ = ["PlannerConfig", "synthesise_blueprint", "__version__"]
+__all__ = ["PlannerConfig", "__version__", "synthesise_blueprint"]

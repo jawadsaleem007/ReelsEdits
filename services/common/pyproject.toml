@@ -7,7 +7,7 @@ name = "reelsedits-common"
 version = "0.1.0"
 description = "Editing Blueprint (EBP) models and shared vocabulary for ReelsEdits"
 readme = "README.md"
-requires-python = ">=3.12"
+requires-python = ">=3.10"
 license = { text = "MIT" }
 authors = [{ name = "Jawad Saleem" }]
 dependencies = [
@@ -30,13 +30,6 @@ packages = ["reelsedits_common"]
 testpaths = ["tests"]
 addopts = "-q --strict-markers"
 
-[tool.ruff]
-line-length = 100
-target-version = "py312"
-
-[tool.ruff.lint]
-select = ["E", "F", "I", "UP", "B", "SIM", "RUF"]
-ignore = ["E501"]
 
 [tool.mypy]
 python_version = "3.12"

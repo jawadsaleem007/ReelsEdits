@@ -48,8 +48,9 @@ This is the risk. Everything else in this document is survivable.
 
 **Early signal:** users requesting the original track. Low completion after the music step. Explicit churn citations.
 
-**Mitigation:**
-- Structural matching so the substitute genuinely *fits* the edit — same BPM, same section layout, drop in the same place
+**Mitigation, in order of effect:**
+- **`platform_attach` is the default** ([docs/18 §4](18-legal-ethics.md)). The user gets the *actual* track by attaching it in-app under the platform's licence, and because we cut to that track's real beat grid it syncs exactly. This addresses the objection directly rather than working around it: the complaint was never "I want a different song", it was "I want *that* song."
+- Structural matching so a substitute, where wanted, genuinely *fits* the edit — same BPM, same section layout, drop in the same place
 - Deep catalogue partnership, so the alternatives are good rather than merely legal
 - `user_supplied` strategy with a rights attestation, for users who have their own licence
 - Long-term: platform partnerships where the platform's own licensed library can be bound
@@ -149,7 +150,7 @@ The product takes two videos as input, and there will be pressure — from users
 |---|---|---|---|---|
 | R1 | Output not good enough | Medium | **Fatal** | Week 14 blind A/B |
 | R2 | Nobody wants it | Medium | **Fatal** | Week 24 conversion |
-| R3 | Music substitution rejected | **Medium-high** | Severe | Week 20 churn survey |
+| R3 | Music rejected | Low-medium | Severe | Week 20 churn survey |
 | R4 | Rights holder litigation | Low-medium | Severe | Legal review; incident |
 | R5 | Incumbent ships it | Medium | Severe | Competitive monitoring |
 | R6 | GPU economics | Low | Severe | Cost ledger, weekly |
@@ -162,7 +163,7 @@ The product takes two videos as input, and there will be pressure — from users
 
 **R7 is the highest-likelihood risk in the table and the one most often left unmitigated.** It is also the cheapest to mitigate — a golden set and a diff. Most teams building on models discover this after the third silent regression.
 
-**R3 is the risk I would most want an outside opinion on.** The technical mitigations are sound; the question is whether short-form culture permits substitution at all, and that is a market question rather than an engineering one.
+**R3 was the risk I would most have wanted an outside opinion on**, and `platform_attach` materially reduces it — the user gets the real track, so the market question ("does short-form culture permit substitution at all?") no longer has to be answered in the affirmative for the product to work. The residual risk is narrower: whether the extra step of attaching the sound in-app is friction users tolerate. That is testable in the beta rather than existential.
 
 ---
 

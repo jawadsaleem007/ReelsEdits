@@ -1,0 +1,14 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "reelsedits-planner"
+version = "0.1.0"
+description = "Blueprint synthesis and re-planning"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+dependencies = ["reelsedits-common>=0.1.0"]
+
+[tool.hatch.build.targets.wheel]
+packages = ["reelsedits_planner"]

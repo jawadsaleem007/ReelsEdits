@@ -5,36 +5,61 @@ on:
   pull_request:
 
 jobs:
-  python:
+  unit:
+    name: Schema and matcher
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with: { python-version: "3.12" }
-
-      - name: Install
-        run: |
-          pip install -e services/common[dev]
-          pip install -e services/matcher
+      - run: pip install -e services/common[dev] -e services/matcher
 
       # The example blueprint is GENERATED from the Pydantic models, so it
-      # cannot silently drift out of sync with them. This step regenerates it
-      # and fails if the committed copy differs.
+      # cannot silently drift out of sync. Regenerate and fail on any diff.
       - name: Blueprint example is current
         run: |
           python schemas/examples/build_example.py
           git diff --exit-code schemas/examples/moto-sunset-128bpm.json
 
-      - name: Test common
-        run: cd services/common && PYTHONPATH=. python -m pytest tests -q
+      - run: cd services/common && PYTHONPATH=. python -m pytest tests -q
+      - run: PYTHONPATH=services/common:services/matcher python -m pytest services/matcher/tests -q
 
-      - name: Test matcher
-        run: PYTHONPATH=services/common:services/matcher python -m pytest services/matcher/tests -q
+  pipeline:
+    name: End-to-end pipeline
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12" }
+      - run: sudo apt-get update && sudo apt-get install -y ffmpeg
+      - run: |
+          pip install -e services/common -e services/matcher \
+                      -e services/analyzer -e services/indexer -e services/renderer
 
-      - name: Lint
+      # Fixture media is ~25s of ffmpeg work, keyed by recipe hash. Cache it or
+      # the suite gets slow enough that people stop running it.
+      - name: Cache fixture media
+        uses: actions/cache@v4
+        with:
+          path: .test-media
+          key: fixtures-${{ hashFiles('services/analyzer/tests/conftest.py') }}
+
+      - name: Pipeline tests
+        env:
+          REELSEDITS_TEST_MEDIA: .test-media
         run: |
-          pip install ruff
-          ruff check services/ schemas/
+          mkdir -p .test-media
+          PYTHONPATH=services/common:services/matcher:services/analyzer:services/indexer:services/renderer \
+            python -m pytest services/analyzer/tests -q --durations=10
+
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12" }
+      - run: pip install ruff
+      - run: ruff check services/ schemas/ tools/
 
   docs:
     runs-on: ubuntu-latest
@@ -42,5 +67,4 @@ jobs:
       - uses: actions/checkout@v4
       # Broken cross-links between 21 documents are otherwise found by readers,
       # which is the expensive way to find them.
-      - name: Check internal doc links
-        run: python3 tools/check_links.py
+      - run: python3 tools/check_links.py

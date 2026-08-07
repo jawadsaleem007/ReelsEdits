@@ -11,7 +11,6 @@ from pathlib import Path
 
 import pytest
 from pydantic import ValidationError
-
 from reelsedits_common import (
     Assignment,
     AudioSection,
@@ -153,9 +152,48 @@ def test_extra_fields_are_rejected_everywhere():
 
 
 def test_music_strategy_has_no_reference_reuse_option():
-    """The absence of a 'reuse the reference track' strategy is deliberate."""
+    """No strategy muxes the reference's master recording into the export.
+
+    Adding one must be a deliberate, breaking change — not something that
+    arrives by accident while adding a legitimate mode. `platform_attach` is how
+    a user gets the original track: silent master, sound attached in-app under
+    the platform's own licence. docs/18 §3.
+    """
     values = {m.value for m in MusicStrategy}
-    assert values == {"catalogue_match", "user_supplied", "silent", "generated"}
+    assert values == {
+        "platform_attach", "catalogue_match", "user_supplied", "silent", "generated"
+    }
+    forbidden = {"reference_audio", "original_sound", "passthrough",
+                 "reference_track", "extracted", "source_audio"}
+    assert not (values & forbidden)
+
+
+def test_platform_attach_requires_an_attach_card():
+    """Without the trim offset the creator cannot re-sync and the edit lands
+    off the beat, which defeats the entire point of the mode."""
+    with pytest.raises(ValidationError, match="requires a PlatformAttachCard"):
+        MusicBinding(strategy=MusicStrategy.PLATFORM_ATTACH)
+
+
+def test_platform_attach_must_not_claim_a_licence():
+    """We are not licensing anything in this mode — the platform is. Carrying a
+    licence_id here would misrepresent what we did."""
+    from reelsedits_common.blueprint import PlatformAttachCard
+
+    with pytest.raises(ValidationError, match="must not carry a licence_id"):
+        MusicBinding(
+            strategy=MusicStrategy.PLATFORM_ATTACH,
+            platform_attach=PlatformAttachCard(trim_start_ms=0),
+            licence_id="lic_nope",
+        )
+
+
+def test_platform_attach_emits_silent_master():
+    assert MusicStrategy.PLATFORM_ATTACH.emits_silent_master
+    assert MusicStrategy.SILENT.emits_silent_master
+    assert not MusicStrategy.CATALOGUE_MATCH.emits_silent_master
+    # And it requires no licence from us, because we distribute no recording.
+    assert not MusicStrategy.PLATFORM_ATTACH.requires_licence
 
 
 def test_catalogue_music_requires_a_licence():

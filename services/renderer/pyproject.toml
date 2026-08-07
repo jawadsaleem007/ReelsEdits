@@ -1,0 +1,15 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "reelsedits-renderer"
+version = "0.2.0"
+description = "Render engine -- Editing Blueprint plus assets to MP4"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+dependencies = ["reelsedits-common>=0.1.0"]
+# Requires ffmpeg with libx264 on PATH.
+
+[tool.hatch.build.targets.wheel]
+packages = ["reelsedits_renderer"]

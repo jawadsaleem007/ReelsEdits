@@ -22,18 +22,59 @@ HERE = Path(__file__).resolve().parent
 REPO = HERE.parents[1]
 sys.path.insert(0, str(REPO / "services" / "common"))
 
-from reelsedits_common import (  # noqa: E402
-    AudioSection, AudioTrack, Blueprint, Canvas, CaptionMode, CaptionTrack,
-    Canvas as _C, ConfidenceBreakdown, Constraints, Cut, CutMode, EffectInstance,
-    EffectType, EnergyCurve, Grade, GradeMatchTarget, GradeParams, HslBand, Impact,
-    Keyframe, MotionTrack, MusicBinding, MusicStrategy, PacingProfile, PaletteColor,
-    Position, Provenance, ReframeTrack, SfxEvent, Slot, SlotRequirements, SpeedMode,
-    SpeedTrack, SplitTone, StyleProfile, TextAnimation, TextAnimationKind, TextStyle,
-    Transition, TransitionType,
+from reelsedits_common import (
+    AudioSection,
+    AudioTrack,
+    Blueprint,
+    Canvas,
+    CaptionMode,
+    CaptionTrack,
+    ConfidenceBreakdown,
+    Constraints,
+    Cut,
+    CutMode,
+    EffectInstance,
+    EffectType,
+    EnergyCurve,
+    Grade,
+    GradeMatchTarget,
+    GradeParams,
+    HslBand,
+    Impact,
+    Keyframe,
+    MotionTrack,
+    MusicBinding,
+    MusicStrategy,
+    PacingProfile,
+    PaletteColor,
+    Position,
+    Provenance,
+    ReframeTrack,
+    SfxEvent,
+    Slot,
+    SlotRequirements,
+    SpeedMode,
+    SpeedTrack,
+    SplitTone,
+    StyleProfile,
+    TextAnimation,
+    TextAnimationKind,
+    TextStyle,
+    Transition,
+    TransitionType,
 )
-from reelsedits_common.enums import (  # noqa: E402
-    CameraHeight, CameraMotion, Composition, FontFamily, NarrativeRole,
-    SectionKind, ShotScale, SubjectClass,
+from reelsedits_common import (
+    Canvas as _C,
+)
+from reelsedits_common.enums import (
+    CameraHeight,
+    CameraMotion,
+    Composition,
+    FontFamily,
+    NarrativeRole,
+    SectionKind,
+    ShotScale,
+    SubjectClass,
 )
 
 BPM = 128.0
@@ -460,7 +501,7 @@ def main() -> int:
 
     budget_problems = blueprint.check_effect_budget()
     print(f"wrote {out.name} ({out.stat().st_size / 1024:.1f} KB)")
-    print(f"  valid against blueprint.schema.json : yes")
+    print("  valid against blueprint.schema.json : yes")
     print(f"  slots {len(blueprint.slots)} · cuts {len(blueprint.cuts)} · transitions {len(blueprint.transitions)}")
     print(f"  effect budget violations            : {budget_problems or 'none'}")
     print(f"  low-confidence subsystems           : {blueprint.low_confidence_subsystems()}")

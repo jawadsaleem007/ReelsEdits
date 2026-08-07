@@ -6,7 +6,7 @@ build-backend = "hatchling.build"
 name = "reelsedits-matcher"
 version = "0.1.0"
 description = "Clip-to-slot assignment solver for ReelsEdits"
-requires-python = ">=3.12"
+requires-python = ">=3.10"
 license = { text = "MIT" }
 dependencies = ["reelsedits-common>=0.1.0"]
 
@@ -22,7 +22,3 @@ packages = ["reelsedits_matcher"]
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 addopts = "-q --strict-markers"
-
-[tool.ruff]
-line-length = 100
-target-version = "py312"

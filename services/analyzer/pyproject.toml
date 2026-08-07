@@ -1,0 +1,30 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "reelsedits-analyzer"
+version = "0.2.0"
+description = "Reference video analysis -- video to Editing Blueprint"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+dependencies = [
+    "reelsedits-common>=0.1.0",
+    "numpy>=1.26",
+    "scipy>=1.11",
+    "librosa>=0.10",       # v0 beat/structure; replaced per docs/07 s6
+    "opencv-python-headless>=4.9",
+    "soundfile>=0.12",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8.0", "jsonschema>=4.22", "ruff>=0.5"]
+# The production stack. Not required to run the v0 pipeline.
+gpu = ["torch>=2.3", "demucs>=4.0", "transformers>=4.40"]
+
+[tool.hatch.build.targets.wheel]
+packages = ["reelsedits_analyzer"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q --strict-markers"

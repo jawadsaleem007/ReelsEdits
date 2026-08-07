@@ -75,17 +75,48 @@ ReelsEdits/
 │   ├── analyzer/            # GPU worker: reference video → Editing Blueprint
 │   ├── indexer/             # GPU worker: user clips → ClipFeature + embeddings
 │   ├── planner/             # CPU/LLM worker: blueprint synthesis & re-planning
-│   ├── matcher/             # CPU worker: clip ↔ slot assignment
-│   └── renderer/            # GPU worker: blueprint + clips → MP4
+│   ├── matcher/             # clip ↔ slot assignment (chain DP + repair)
+│   ├── renderer/            # blueprint + clips → MP4 (FFmpeg, deterministic)
+│   └── cli/                 # `reelsedits analyze | index | build`
 ├── infra/                   # docker-compose, Dockerfiles, k8s, Terraform sketch
+├── tools/                   # check_links.py and other repo utilities
 └── web/                     # Next.js 15 app — upload, timeline, preview, export
 ```
+
+## Try it
+
+```bash
+# ffmpeg with libx264 is required
+pip install -e services/common -e services/matcher -e services/analyzer \
+            -e services/indexer -e services/renderer -e services/cli
+
+reelsedits analyze reference.mp4          # → style card + blueprint.json
+reelsedits index   my-clips/              # → segments, quality, shot scales
+reelsedits build   reference.mp4 my-clips/ -o out.mp4 --show-matches
+```
+
+`build` refuses to render below 0.55 coverage unless you pass `--force`, and names
+what footage is missing. Silent bad output is the worst failure mode in this
+product, so it is not a default.
 
 ---
 
 ## Status
 
-**Pre-alpha.** This repository currently contains the complete design and a runnable scaffold. Services expose their real API surface and validate real data structures, but the model-backed analysis stages are stubs. See [docs/20](docs/20-implementation-plan.md) for the path from here to a working MVP.
+**Alpha — the pipeline runs end to end and produces a real video.**
+
+```bash
+pip install -e services/common -e services/matcher \
+            -e services/analyzer -e services/indexer -e services/renderer -e services/cli
+
+reelsedits build reference.mp4 my-clips/ -o out.mp4
+```
+
+That command analyses the reference into a blueprint, indexes your footage, matches clips to slots, and renders an MP4. What works today: beat and tempo tracking, section structure and drop detection, shot-boundary detection with gradual-transition intervals, camera-motion classification and motion-energy curves, colour-grade measurement, blueprint assembly, constrained clip matching, and deterministic FFmpeg rendering.
+
+What is still a v0 baseline: the analysis models. librosa stands in for Demucs + a transformer beat tracker; histogram differencing stands in for the TransNetV2 + AutoShot ensemble; Farneback flow stands in for SEA-RAFT; there is no VLM, so `subject_class` is unset and semantic matching is inactive. [docs/07](docs/07-model-recommendations.md) specifies the replacements — and because the blueprint schema is frozen, swapping them in changes function bodies, not contracts.
+
+The API service and GPU worker topology are scaffolded but not wired to datastores. See [docs/20](docs/20-implementation-plan.md).
 
 ## Three honest caveats
 
@@ -93,7 +124,7 @@ Stated up front because they shape every design decision downstream:
 
 1. **Effect parameter recovery is an under-determined inverse problem.** You cannot exactly recover a LUT, a grain profile, or a glow radius from a compressed, delivered video — the encode has already destroyed the evidence. ReelsEdits estimates perceptually-equivalent parameters and attaches a confidence score to each. Where confidence is low, we say so in the UI rather than silently guessing. See [docs/08](docs/08-algorithms.md#5-colour-grade-inversion).
 
-2. **The reference's music cannot be reused.** It is almost always someone else's copyrighted master. The blueprint stores the reference's *rhythmic and energetic structure* — beat grid, downbeats, section boundaries, energy envelope — and the renderer binds that structure to a **licensed** track from our catalogue with compatible tempo and form. This is a schema-level decision, not a policy bolted on afterwards. See [docs/06](docs/06-blueprint-spec.md#3-audio-track) and [docs/18](docs/18-legal-ethics.md).
+2. **We never redistribute the reference's recording — but you still get the track.** The master is almost always someone else's copyright, so we cannot mux it into an export. The default `platform_attach` mode renders a *silent* master and hands the creator the trim offset to attach the original sound inside TikTok/Instagram, where the platform's own blanket licence covers it. Because the edit was cut to that track's real beat grid, it re-syncs exactly. Same track, same sync, no redistribution. Licensed-catalogue substitution remains available for off-platform publishing. See [docs/06](docs/06-blueprint-spec.md#3-audio-track) and [docs/18](docs/18-legal-ethics.md).
 
 3. **Clip matching degrades gracefully or not at all.** If a user uploads twelve seconds of footage against a ninety-second blueprint, no amount of modelling saves the output. The system detects footage insufficiency before rendering and either compresses the blueprint's structure or tells the user what is missing. Silent bad output is the worst failure mode in this product. See [docs/09](docs/09-clip-matching.md#7-insufficiency-and-graceful-degradation).
 

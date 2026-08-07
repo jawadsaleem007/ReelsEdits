@@ -63,7 +63,7 @@ class ShotScale(StrEnum):
             raise ValueError("ShotScale.ANY has no ordinal position")
         return order.index(self)
 
-    def distance(self, other: "ShotScale") -> int:
+    def distance(self, other: ShotScale) -> int:
         """Buckets between two scales. ``ANY`` matches anything at distance 0."""
         if self is ShotScale.ANY or other is ShotScale.ANY:
             return 0
@@ -298,10 +298,21 @@ class SectionKind(StrEnum):
 class MusicStrategy(StrEnum):
     """How the rhythmic skeleton is realised with real audio.
 
-    There is deliberately no member for "reuse the reference's track". The
-    absence is the point -- see docs/18-legal-ethics.md.
+    There is deliberately no member for "mux the reference's master recording
+    into the export". Extracting a copyrighted master and redistributing it is
+    the single largest legal exposure in this product, and the absence of the
+    option is the point -- see docs/18-legal-ethics.md.
+
+    PLATFORM_ATTACH is the answer for users who want the original track, and it
+    is better than substitution: we export a silent master and the creator
+    attaches the sound natively inside TikTok/Instagram, where the platform's
+    own blanket licence covers it. Because the edit was cut to that track's real
+    beat grid, it re-syncs exactly -- we emit the trim offset so it lines up on
+    the first try. We never touch the recording; the platform never leaves its
+    licence.
     """
 
+    PLATFORM_ATTACH = "platform_attach"
     CATALOGUE_MATCH = "catalogue_match"
     USER_SUPPLIED = "user_supplied"
     SILENT = "silent"
@@ -309,7 +320,17 @@ class MusicStrategy(StrEnum):
 
     @property
     def requires_licence(self) -> bool:
+        """Whether WE must hold a licence to render this."""
         return self in {MusicStrategy.CATALOGUE_MATCH, MusicStrategy.GENERATED}
+
+    @property
+    def emits_silent_master(self) -> bool:
+        """Whether the rendered file carries no music bed.
+
+        The video still carries SFX and ducked source audio -- 'silent' here
+        means no music track, not no audio.
+        """
+        return self in {MusicStrategy.PLATFORM_ATTACH, MusicStrategy.SILENT}
 
 
 class CaptionMode(StrEnum):

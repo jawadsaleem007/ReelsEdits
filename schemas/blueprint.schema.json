@@ -4,478 +4,1700 @@
   "title": "Editing Blueprint (EBP) v1",
   "description": "A renderer-agnostic, timecoded specification of editing craft extracted from a reference video. Contains NO pixel or audio data from the reference. See docs/06-blueprint-spec.md.",
   "type": "object",
-  "required": ["ebp_version", "id", "created_at", "provenance", "canvas", "audio", "style", "slots", "cuts"],
+  "required": [
+    "ebp_version",
+    "id",
+    "created_at",
+    "provenance",
+    "canvas",
+    "audio",
+    "style",
+    "slots",
+    "cuts"
+  ],
   "additionalProperties": false,
-
   "properties": {
-    "ebp_version": { "const": "1.0" },
-    "id": { "type": "string", "pattern": "^bp_[a-zA-Z0-9]{12,}$" },
-    "parent_id": { "type": ["string", "null"], "pattern": "^bp_[a-zA-Z0-9]{12,}$" },
-    "created_at": { "type": "string", "format": "date-time" },
-    "name": { "type": ["string", "null"], "maxLength": 200 },
-
-    "provenance": { "$ref": "#/$defs/Provenance" },
-    "canvas": { "$ref": "#/$defs/Canvas" },
-    "audio": { "$ref": "#/$defs/AudioTrack" },
-    "style": { "$ref": "#/$defs/StyleProfile" },
-
-    "slots":       { "type": "array", "items": { "$ref": "#/$defs/Slot" }, "minItems": 1 },
-    "cuts":        { "type": "array", "items": { "$ref": "#/$defs/Cut" }, "minItems": 1 },
-    "transitions": { "type": "array", "items": { "$ref": "#/$defs/Transition" }, "default": [] },
-    "motion":      { "type": "array", "items": { "$ref": "#/$defs/MotionTrack" }, "default": [] },
-    "speed":       { "type": "array", "items": { "$ref": "#/$defs/SpeedTrack" }, "default": [] },
-    "effects":     { "type": "array", "items": { "$ref": "#/$defs/EffectInstance" }, "default": [] },
-    "grade":       { "$ref": "#/$defs/Grade" },
-    "captions":    { "$ref": "#/$defs/CaptionTrack" },
-    "text_objects":{ "type": "array", "items": { "$ref": "#/$defs/TextObject" }, "default": [] },
-    "reframe":     { "type": "array", "items": { "$ref": "#/$defs/ReframeTrack" }, "default": [] },
-    "constraints": { "$ref": "#/$defs/Constraints" },
-    "degradation": { "$ref": "#/$defs/Degradation" }
+    "ebp_version": {
+      "const": "1.0"
+    },
+    "id": {
+      "type": "string",
+      "pattern": "^bp_[a-zA-Z0-9]{12,}$"
+    },
+    "parent_id": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "pattern": "^bp_[a-zA-Z0-9]{12,}$"
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "name": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "maxLength": 200
+    },
+    "provenance": {
+      "$ref": "#/$defs/Provenance"
+    },
+    "canvas": {
+      "$ref": "#/$defs/Canvas"
+    },
+    "audio": {
+      "$ref": "#/$defs/AudioTrack"
+    },
+    "style": {
+      "$ref": "#/$defs/StyleProfile"
+    },
+    "slots": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/Slot"
+      },
+      "minItems": 1
+    },
+    "cuts": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/Cut"
+      },
+      "minItems": 1
+    },
+    "transitions": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/Transition"
+      },
+      "default": []
+    },
+    "motion": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/MotionTrack"
+      },
+      "default": []
+    },
+    "speed": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/SpeedTrack"
+      },
+      "default": []
+    },
+    "effects": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/EffectInstance"
+      },
+      "default": []
+    },
+    "grade": {
+      "$ref": "#/$defs/Grade"
+    },
+    "captions": {
+      "$ref": "#/$defs/CaptionTrack"
+    },
+    "text_objects": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/TextObject"
+      },
+      "default": []
+    },
+    "reframe": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/ReframeTrack"
+      },
+      "default": []
+    },
+    "constraints": {
+      "$ref": "#/$defs/Constraints"
+    },
+    "degradation": {
+      "$ref": "#/$defs/Degradation"
+    }
   },
-
   "$defs": {
-
     "Confidence": {
-      "type": "number", "minimum": 0, "maximum": 1,
+      "type": "number",
+      "minimum": 0,
+      "maximum": 1,
       "description": "0 = pure guess, 1 = directly measured. Consumers MUST degrade behaviour below 0.6."
     },
-
-    "Ms": { "type": "integer", "minimum": 0, "description": "Milliseconds from timeline origin." },
-
+    "Ms": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Milliseconds from timeline origin."
+    },
     "Easing": {
       "type": "string",
-      "enum": ["linear", "ease_in", "ease_out", "ease_in_out", "cubic_in", "cubic_out",
-               "cubic_in_out", "expo_in", "expo_out", "back_out", "bounce_out", "hold"]
+      "enum": [
+        "linear",
+        "ease_in",
+        "ease_out",
+        "ease_in_out",
+        "cubic_in",
+        "cubic_out",
+        "cubic_in_out",
+        "expo_in",
+        "expo_out",
+        "back_out",
+        "bounce_out",
+        "hold"
+      ]
     },
-
     "Provenance": {
       "type": "object",
-      "required": ["analyzer_version", "renderer_min_version", "confidence"],
+      "required": [
+        "analyzer_version",
+        "renderer_min_version",
+        "confidence"
+      ],
       "additionalProperties": false,
       "properties": {
-        "analyzer_version":     { "type": "string" },
-        "planner_model":        { "type": ["string", "null"] },
-        "planner_tier":         { "type": "string", "enum": ["frontier", "fallback", "none"], "default": "frontier" },
-        "planner_seed":         { "type": ["integer", "null"] },
-        "renderer_min_version": { "type": "string" },
-        "source_fingerprint":   { "type": ["string", "null"], "description": "Perceptual hash of the reference. NOT a copy of it." },
-        "source_duration_ms":   { "$ref": "#/$defs/Ms" },
+        "analyzer_version": {
+          "type": "string"
+        },
+        "planner_model": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "planner_tier": {
+          "type": "string",
+          "enum": [
+            "frontier",
+            "fallback",
+            "none"
+          ],
+          "default": "frontier"
+        },
+        "planner_seed": {
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "renderer_min_version": {
+          "type": "string"
+        },
+        "source_fingerprint": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Perceptual hash of the reference. NOT a copy of it."
+        },
+        "source_duration_ms": {
+          "$ref": "#/$defs/Ms"
+        },
         "confidence": {
           "type": "object",
           "additionalProperties": false,
           "properties": {
-            "overall":     { "$ref": "#/$defs/Confidence" },
-            "beat_grid":   { "$ref": "#/$defs/Confidence" },
-            "structure":   { "$ref": "#/$defs/Confidence" },
-            "transitions": { "$ref": "#/$defs/Confidence" },
-            "grade":       { "$ref": "#/$defs/Confidence" },
-            "speed":       { "$ref": "#/$defs/Confidence" },
-            "captions":    { "$ref": "#/$defs/Confidence" }
+            "overall": {
+              "$ref": "#/$defs/Confidence"
+            },
+            "beat_grid": {
+              "$ref": "#/$defs/Confidence"
+            },
+            "structure": {
+              "$ref": "#/$defs/Confidence"
+            },
+            "transitions": {
+              "$ref": "#/$defs/Confidence"
+            },
+            "grade": {
+              "$ref": "#/$defs/Confidence"
+            },
+            "speed": {
+              "$ref": "#/$defs/Confidence"
+            },
+            "captions": {
+              "$ref": "#/$defs/Confidence"
+            }
           },
-          "required": ["overall"]
+          "required": [
+            "overall"
+          ]
         },
-        "notes": { "type": "array", "items": { "type": "string" }, "default": [] }
+        "notes": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "default": []
+        }
       }
     },
-
     "Canvas": {
       "type": "object",
-      "required": ["width", "height", "fps", "duration_ms"],
+      "required": [
+        "width",
+        "height",
+        "fps",
+        "duration_ms"
+      ],
       "additionalProperties": false,
       "properties": {
-        "width":  { "type": "integer", "minimum": 16, "maximum": 7680 },
-        "height": { "type": "integer", "minimum": 16, "maximum": 7680 },
-        "fps":    { "type": "number", "exclusiveMinimum": 0, "maximum": 240 },
-        "duration_ms": { "$ref": "#/$defs/Ms" },
-        "aspect": { "type": "string", "enum": ["9:16", "16:9", "1:1", "4:5", "4:3", "2.39:1", "custom"], "default": "9:16" },
-        "color_space": { "type": "string", "enum": ["bt709", "bt2020_pq", "bt2020_hlg", "srgb"], "default": "bt709" },
+        "width": {
+          "type": "integer",
+          "minimum": 16,
+          "maximum": 7680
+        },
+        "height": {
+          "type": "integer",
+          "minimum": 16,
+          "maximum": 7680
+        },
+        "fps": {
+          "type": "number",
+          "exclusiveMinimum": 0,
+          "maximum": 240
+        },
+        "duration_ms": {
+          "$ref": "#/$defs/Ms"
+        },
+        "aspect": {
+          "type": "string",
+          "enum": [
+            "9:16",
+            "16:9",
+            "1:1",
+            "4:5",
+            "4:3",
+            "2.39:1",
+            "custom"
+          ],
+          "default": "9:16"
+        },
+        "color_space": {
+          "type": "string",
+          "enum": [
+            "bt709",
+            "bt2020_pq",
+            "bt2020_hlg",
+            "srgb"
+          ],
+          "default": "bt709"
+        },
         "safe_area_inset_pct": {
           "type": "object",
           "additionalProperties": false,
           "description": "Platform UI chrome to keep clear of. TikTok right rail, IG caption bar, etc.",
           "properties": {
-            "top":    { "type": "number", "minimum": 0, "maximum": 40, "default": 0 },
-            "bottom": { "type": "number", "minimum": 0, "maximum": 40, "default": 0 },
-            "left":   { "type": "number", "minimum": 0, "maximum": 40, "default": 0 },
-            "right":  { "type": "number", "minimum": 0, "maximum": 40, "default": 0 }
+            "top": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 40,
+              "default": 0
+            },
+            "bottom": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 40,
+              "default": 0
+            },
+            "left": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 40,
+              "default": 0
+            },
+            "right": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 40,
+              "default": 0
+            }
           }
         }
       }
     },
-
     "AudioTrack": {
       "type": "object",
       "description": "The reference's RHYTHMIC SKELETON. Never audio data. The renderer binds this to a licensed track via music_binding.",
-      "required": ["bpm", "beat_grid_ms", "sections", "energy_curve"],
+      "required": [
+        "bpm",
+        "beat_grid_ms",
+        "sections",
+        "energy_curve"
+      ],
       "additionalProperties": false,
       "properties": {
-        "bpm": { "type": "number", "exclusiveMinimum": 20, "maximum": 300 },
+        "bpm": {
+          "type": "number",
+          "exclusiveMinimum": 20,
+          "maximum": 300
+        },
         "bpm_curve": {
           "type": "array",
           "description": "Tempo changes as [time_ms, bpm] pairs. Empty means constant tempo.",
-          "items": { "type": "array", "prefixItems": [{ "$ref": "#/$defs/Ms" }, { "type": "number" }], "minItems": 2, "maxItems": 2 },
+          "items": {
+            "type": "array",
+            "prefixItems": [
+              {
+                "$ref": "#/$defs/Ms"
+              },
+              {
+                "type": "number"
+              }
+            ],
+            "minItems": 2,
+            "maxItems": 2
+          },
           "default": []
         },
-        "time_signature": { "type": "string", "pattern": "^[0-9]{1,2}/[0-9]{1,2}$", "default": "4/4" },
-        "beat_grid_ms":  { "type": "array", "items": { "$ref": "#/$defs/Ms" }, "minItems": 2 },
-        "downbeats_ms":  { "type": "array", "items": { "$ref": "#/$defs/Ms" }, "default": [] },
-        "sections":      { "type": "array", "items": { "$ref": "#/$defs/AudioSection" }, "minItems": 1 },
+        "time_signature": {
+          "type": "string",
+          "pattern": "^[0-9]{1,2}/[0-9]{1,2}$",
+          "default": "4/4"
+        },
+        "beat_grid_ms": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Ms"
+          },
+          "minItems": 2
+        },
+        "downbeats_ms": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Ms"
+          },
+          "default": []
+        },
+        "sections": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/AudioSection"
+          },
+          "minItems": 1
+        },
         "energy_curve": {
           "type": "object",
-          "required": ["hz", "values"],
+          "required": [
+            "hz",
+            "values"
+          ],
           "additionalProperties": false,
           "properties": {
-            "hz":     { "type": "number", "exclusiveMinimum": 0, "maximum": 100, "default": 20 },
-            "values": { "type": "array", "items": { "type": "number", "minimum": 0, "maximum": 1 }, "minItems": 2 }
+            "hz": {
+              "type": "number",
+              "exclusiveMinimum": 0,
+              "maximum": 100,
+              "default": 20
+            },
+            "values": {
+              "type": "array",
+              "items": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 1
+              },
+              "minItems": 2
+            }
           }
         },
-        "impacts": { "type": "array", "items": { "$ref": "#/$defs/Impact" }, "default": [] },
-        "sfx":     { "type": "array", "items": { "$ref": "#/$defs/SfxEvent" }, "default": [] },
-        "mood":    { "type": "array", "items": { "type": "string" }, "default": [] },
-        "genre":   { "type": "array", "items": { "type": "string" }, "default": [] },
-        "music_binding": { "$ref": "#/$defs/MusicBinding" }
-      }
-    },
-
-    "AudioSection": {
-      "type": "object",
-      "required": ["kind", "t_in_ms", "t_out_ms"],
-      "additionalProperties": false,
-      "properties": {
-        "kind": { "type": "string", "enum": ["intro", "verse", "pre_chorus", "build", "drop", "chorus", "bridge", "breakdown", "outro", "unknown"] },
-        "t_in_ms":  { "$ref": "#/$defs/Ms" },
-        "t_out_ms": { "$ref": "#/$defs/Ms" },
-        "energy":   { "type": "number", "minimum": 0, "maximum": 1 },
-        "target_cut_density": { "type": "number", "minimum": 0, "maximum": 12, "description": "Cuts per second the renderer should aim for in this section when adapting to a different-length track." },
-        "label": { "type": ["string", "null"] }
-      }
-    },
-
-    "Impact": {
-      "type": "object",
-      "required": ["t_ms", "strength"],
-      "additionalProperties": false,
-      "properties": {
-        "t_ms":     { "$ref": "#/$defs/Ms" },
-        "strength": { "type": "number", "minimum": 0, "maximum": 1 },
-        "kind":     { "type": "string", "enum": ["drop", "hit", "riser_peak", "silence_break", "vocal_entry"], "default": "hit" }
-      }
-    },
-
-    "SfxEvent": {
-      "type": "object",
-      "required": ["t_ms", "class"],
-      "additionalProperties": false,
-      "properties": {
-        "t_ms":  { "$ref": "#/$defs/Ms" },
-        "class": { "type": "string", "enum": ["whoosh", "impact", "riser", "sub_drop", "click", "glitch", "reverse", "ambience", "other"] },
-        "duration_ms": { "$ref": "#/$defs/Ms" },
-        "gain_db": { "type": "number", "minimum": -60, "maximum": 12, "default": -6 },
-        "bound_to_cut": { "type": ["integer", "null"], "minimum": 0, "description": "Index into cuts[] this SFX punctuates." }
-      }
-    },
-
-    "MusicBinding": {
-      "type": "object",
-      "description": "How the rhythmic skeleton is realised with a LICENSED track at render time. The reference's own audio is never a valid value here.",
-      "required": ["strategy"],
-      "additionalProperties": false,
-      "properties": {
-        "strategy": { "type": "string", "enum": ["catalogue_match", "user_supplied", "silent", "generated"] },
-        "track_id": { "type": ["string", "null"] },
-        "licence_id": { "type": ["string", "null"], "description": "Required for catalogue_match and generated." },
-        "match_score": { "type": ["number", "null"], "minimum": 0, "maximum": 1 },
-        "time_map": {
+        "impacts": {
           "type": "array",
-          "description": "Warp from blueprint time to bound-track time as [bp_ms, track_ms] anchor pairs. Handles tempo mismatch without pitch-shifting.",
-          "items": { "type": "array", "prefixItems": [{ "$ref": "#/$defs/Ms" }, { "$ref": "#/$defs/Ms" }], "minItems": 2, "maxItems": 2 },
+          "items": {
+            "$ref": "#/$defs/Impact"
+          },
           "default": []
+        },
+        "sfx": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/SfxEvent"
+          },
+          "default": []
+        },
+        "mood": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "default": []
+        },
+        "genre": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "default": []
+        },
+        "music_binding": {
+          "$ref": "#/$defs/MusicBinding"
         }
       }
     },
-
-    "StyleProfile": {
+    "AudioSection": {
       "type": "object",
-      "required": ["summary", "pacing"],
+      "required": [
+        "kind",
+        "t_in_ms",
+        "t_out_ms"
+      ],
       "additionalProperties": false,
       "properties": {
-        "summary": { "type": "string", "maxLength": 2000, "description": "Human-readable. Rendered on the style card." },
-        "tags":    { "type": "array", "items": { "type": "string" }, "default": [] },
+        "kind": {
+          "type": "string",
+          "enum": [
+            "intro",
+            "verse",
+            "pre_chorus",
+            "build",
+            "drop",
+            "chorus",
+            "bridge",
+            "breakdown",
+            "outro",
+            "unknown"
+          ]
+        },
+        "t_in_ms": {
+          "$ref": "#/$defs/Ms"
+        },
+        "t_out_ms": {
+          "$ref": "#/$defs/Ms"
+        },
+        "energy": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "target_cut_density": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 12,
+          "description": "Cuts per second the renderer should aim for in this section when adapting to a different-length track."
+        },
+        "label": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      }
+    },
+    "Impact": {
+      "type": "object",
+      "required": [
+        "t_ms",
+        "strength"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "t_ms": {
+          "$ref": "#/$defs/Ms"
+        },
+        "strength": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "kind": {
+          "type": "string",
+          "enum": [
+            "drop",
+            "hit",
+            "riser_peak",
+            "silence_break",
+            "vocal_entry"
+          ],
+          "default": "hit"
+        }
+      }
+    },
+    "SfxEvent": {
+      "type": "object",
+      "required": [
+        "t_ms",
+        "class"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "t_ms": {
+          "$ref": "#/$defs/Ms"
+        },
+        "class": {
+          "type": "string",
+          "enum": [
+            "whoosh",
+            "impact",
+            "riser",
+            "sub_drop",
+            "click",
+            "glitch",
+            "reverse",
+            "ambience",
+            "other"
+          ]
+        },
+        "duration_ms": {
+          "$ref": "#/$defs/Ms"
+        },
+        "gain_db": {
+          "type": "number",
+          "minimum": -60,
+          "maximum": 12,
+          "default": -6
+        },
+        "bound_to_cut": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0,
+          "description": "Index into cuts[] this SFX punctuates."
+        }
+      }
+    },
+    "MusicBinding": {
+      "type": "object",
+      "description": "How the rhythmic skeleton is realised with real audio at render time. There is deliberately NO strategy that muxes the reference's master recording into the export. 'platform_attach' is how a user gets the original track: silent master, sound attached in-app under the platform's licence.",
+      "required": [
+        "strategy"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "strategy": {
+          "type": "string",
+          "enum": [
+            "platform_attach",
+            "catalogue_match",
+            "user_supplied",
+            "silent",
+            "generated"
+          ]
+        },
+        "track_id": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "licence_id": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Required for catalogue_match and generated."
+        },
+        "match_score": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0,
+          "maximum": 1
+        },
+        "time_map": {
+          "type": "array",
+          "description": "Warp from blueprint time to bound-track time as [bp_ms, track_ms] anchor pairs. Handles tempo mismatch without pitch-shifting.",
+          "items": {
+            "type": "array",
+            "prefixItems": [
+              {
+                "$ref": "#/$defs/Ms"
+              },
+              {
+                "$ref": "#/$defs/Ms"
+              }
+            ],
+            "minItems": 2,
+            "maxItems": 2
+          },
+          "default": []
+        },
+        "platform_attach": {
+          "$ref": "#/$defs/PlatformAttachCard"
+        }
+      }
+    },
+    "StyleProfile": {
+      "type": "object",
+      "required": [
+        "summary",
+        "pacing"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "summary": {
+          "type": "string",
+          "maxLength": 2000,
+          "description": "Human-readable. Rendered on the style card."
+        },
+        "tags": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "default": []
+        },
         "pacing": {
           "type": "object",
-          "required": ["cuts_per_second", "beat_lock_ratio"],
+          "required": [
+            "cuts_per_second",
+            "beat_lock_ratio"
+          ],
           "additionalProperties": false,
           "properties": {
-            "cuts_per_second":  { "type": "number", "minimum": 0, "maximum": 12 },
-            "beat_lock_ratio":  { "type": "number", "minimum": 0, "maximum": 1, "description": "Fraction of cuts within tolerance of a beat or subdivision." },
-            "mean_shot_ms":     { "$ref": "#/$defs/Ms" },
-            "median_shot_ms":   { "$ref": "#/$defs/Ms" },
-            "shot_ms_stddev":   { "type": "number", "minimum": 0 },
-            "offset_mean_ms":   { "type": "number", "minimum": -400, "maximum": 400, "description": "Mean signed cut offset from beat. Typically negative for expert edits." },
-            "offset_stddev_ms": { "type": "number", "minimum": 0 },
-            "acceleration":     { "type": "number", "minimum": -1, "maximum": 1, "description": "-1 decelerating, 0 steady, +1 accelerating across the piece." }
+            "cuts_per_second": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 12
+            },
+            "beat_lock_ratio": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1,
+              "description": "Fraction of cuts within tolerance of a beat or subdivision."
+            },
+            "mean_shot_ms": {
+              "$ref": "#/$defs/Ms"
+            },
+            "median_shot_ms": {
+              "$ref": "#/$defs/Ms"
+            },
+            "shot_ms_stddev": {
+              "type": "number",
+              "minimum": 0
+            },
+            "offset_mean_ms": {
+              "type": "number",
+              "minimum": -400,
+              "maximum": 400,
+              "description": "Mean signed cut offset from beat. Typically negative for expert edits."
+            },
+            "offset_stddev_ms": {
+              "type": "number",
+              "minimum": 0
+            },
+            "acceleration": {
+              "type": "number",
+              "minimum": -1,
+              "maximum": 1,
+              "description": "-1 decelerating, 0 steady, +1 accelerating across the piece."
+            }
           }
         },
-        "shot_scale_mix": { "type": "object", "additionalProperties": { "type": "number", "minimum": 0, "maximum": 1 }, "default": {} },
-        "transition_mix": { "type": "object", "additionalProperties": { "type": "number", "minimum": 0, "maximum": 1 }, "default": {} },
+        "shot_scale_mix": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1
+          },
+          "default": {}
+        },
+        "transition_mix": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1
+          },
+          "default": {}
+        },
         "effect_budget": {
           "type": "object",
           "description": "Max instances per effect type per section. Reproducing restraint matters as much as reproducing vocabulary.",
-          "additionalProperties": { "type": "integer", "minimum": 0 },
+          "additionalProperties": {
+            "type": "integer",
+            "minimum": 0
+          },
           "default": {}
         },
-        "palette": { "type": "array", "items": { "$ref": "#/$defs/PaletteColor" }, "maxItems": 8, "default": [] },
-        "embedding": { "type": ["array", "null"], "items": { "type": "number" }, "description": "Style vector for similarity search. Length is model-dependent." }
+        "palette": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/PaletteColor"
+          },
+          "maxItems": 8,
+          "default": []
+        },
+        "embedding": {
+          "type": [
+            "array",
+            "null"
+          ],
+          "items": {
+            "type": "number"
+          },
+          "description": "Style vector for similarity search. Length is model-dependent."
+        }
       }
     },
-
     "PaletteColor": {
       "type": "object",
-      "required": ["hex", "weight"],
+      "required": [
+        "hex",
+        "weight"
+      ],
       "additionalProperties": false,
       "properties": {
-        "hex":    { "type": "string", "pattern": "^#[0-9a-fA-F]{6}$" },
-        "weight": { "type": "number", "minimum": 0, "maximum": 1 },
-        "role":   { "type": "string", "enum": ["dominant", "accent", "shadow", "highlight", "skin"], "default": "dominant" }
+        "hex": {
+          "type": "string",
+          "pattern": "^#[0-9a-fA-F]{6}$"
+        },
+        "weight": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "role": {
+          "type": "string",
+          "enum": [
+            "dominant",
+            "accent",
+            "shadow",
+            "highlight",
+            "skin"
+          ],
+          "default": "dominant"
+        }
       }
     },
-
-    "ShotScale":    { "type": "string", "enum": ["extreme_close", "close", "medium_close", "medium", "wide", "extreme_wide", "any"] },
-    "CameraMotion": { "type": "string", "enum": ["static", "pan_left", "pan_right", "tilt_up", "tilt_down", "zoom_in", "zoom_out", "dolly_in", "dolly_out", "truck_left", "truck_right", "roll", "handheld", "tracking", "orbit", "aerial", "any"] },
-    "CameraHeight": { "type": "string", "enum": ["ground", "low", "eye", "high", "aerial", "any"] },
-    "SubjectClass": { "type": "string", "enum": ["person_face", "person_body", "person_group", "vehicle", "mechanical_detail", "animal", "food", "product", "architecture", "landscape", "sky", "water", "text_graphic", "abstract", "crowd", "any"] },
-    "NarrativeRole":{ "type": "string", "enum": ["hook", "establish", "detail", "action_beat", "reaction", "reveal", "transition_shot", "payoff", "outro", "any"] },
-    "Composition":  { "type": "string", "enum": ["centered", "thirds_left", "thirds_right", "symmetric", "negative_space_left", "negative_space_right", "low_horizon", "high_horizon", "any"] },
-
+    "ShotScale": {
+      "type": "string",
+      "enum": [
+        "extreme_close",
+        "close",
+        "medium_close",
+        "medium",
+        "wide",
+        "extreme_wide",
+        "any"
+      ]
+    },
+    "CameraMotion": {
+      "type": "string",
+      "enum": [
+        "static",
+        "pan_left",
+        "pan_right",
+        "tilt_up",
+        "tilt_down",
+        "zoom_in",
+        "zoom_out",
+        "dolly_in",
+        "dolly_out",
+        "truck_left",
+        "truck_right",
+        "roll",
+        "handheld",
+        "tracking",
+        "orbit",
+        "aerial",
+        "any"
+      ]
+    },
+    "CameraHeight": {
+      "type": "string",
+      "enum": [
+        "ground",
+        "low",
+        "eye",
+        "high",
+        "aerial",
+        "any"
+      ]
+    },
+    "SubjectClass": {
+      "type": "string",
+      "enum": [
+        "person_face",
+        "person_body",
+        "person_group",
+        "vehicle",
+        "mechanical_detail",
+        "animal",
+        "food",
+        "product",
+        "architecture",
+        "landscape",
+        "sky",
+        "water",
+        "text_graphic",
+        "abstract",
+        "crowd",
+        "any"
+      ]
+    },
+    "NarrativeRole": {
+      "type": "string",
+      "enum": [
+        "hook",
+        "establish",
+        "detail",
+        "action_beat",
+        "reaction",
+        "reveal",
+        "transition_shot",
+        "payoff",
+        "outro",
+        "any"
+      ]
+    },
+    "Composition": {
+      "type": "string",
+      "enum": [
+        "centered",
+        "thirds_left",
+        "thirds_right",
+        "symmetric",
+        "negative_space_left",
+        "negative_space_right",
+        "low_horizon",
+        "high_horizon",
+        "any"
+      ]
+    },
     "Slot": {
       "type": "object",
       "description": "A hole in the timeline that a user clip segment must fill. The matcher's unit of work.",
-      "required": ["index", "t_in_ms", "t_out_ms", "requirements", "importance"],
+      "required": [
+        "index",
+        "t_in_ms",
+        "t_out_ms",
+        "requirements",
+        "importance"
+      ],
       "additionalProperties": false,
       "properties": {
-        "index":    { "type": "integer", "minimum": 0 },
-        "t_in_ms":  { "$ref": "#/$defs/Ms" },
-        "t_out_ms": { "$ref": "#/$defs/Ms" },
-        "section":  { "type": ["integer", "null"], "minimum": 0, "description": "Index into audio.sections[]." },
-        "importance": { "type": "number", "minimum": 0, "maximum": 1, "description": "1.0 = load-bearing (the drop shot). Low-importance slots are dropped first under insufficiency." },
+        "index": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "t_in_ms": {
+          "$ref": "#/$defs/Ms"
+        },
+        "t_out_ms": {
+          "$ref": "#/$defs/Ms"
+        },
+        "section": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0,
+          "description": "Index into audio.sections[]."
+        },
+        "importance": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "description": "1.0 = load-bearing (the drop shot). Low-importance slots are dropped first under insufficiency."
+        },
         "requirements": {
           "type": "object",
           "additionalProperties": false,
           "properties": {
-            "shot_scale":       { "$ref": "#/$defs/ShotScale" },
-            "shot_scale_tolerance": { "type": "integer", "minimum": 0, "maximum": 3, "default": 1, "description": "Buckets of slack permitted." },
-            "camera_motion":    { "type": "array", "items": { "$ref": "#/$defs/CameraMotion" }, "default": ["any"] },
-            "camera_height":    { "$ref": "#/$defs/CameraHeight" },
-            "subject_class":    { "type": "array", "items": { "$ref": "#/$defs/SubjectClass" }, "default": ["any"] },
-            "narrative_role":   { "$ref": "#/$defs/NarrativeRole" },
-            "composition":      { "$ref": "#/$defs/Composition" },
-            "motion_energy":    { "type": "number", "minimum": 0, "maximum": 1 },
-            "motion_energy_tolerance": { "type": "number", "minimum": 0, "maximum": 1, "default": 0.25 },
-            "motion_direction_deg": { "type": ["number", "null"], "minimum": -180, "maximum": 180, "description": "Required for whip-pan and directional transitions to work." },
-            "min_quality":      { "type": "number", "minimum": 0, "maximum": 1, "default": 0.5 },
-            "requires_face":    { "type": "boolean", "default": false },
-            "requires_speech":  { "type": "boolean", "default": false },
-            "semantic_vec":     { "type": ["array", "null"], "items": { "type": "number" } },
-            "semantic_hint":    { "type": ["string", "null"], "maxLength": 300, "description": "Natural-language description of the reference shot, for VLM re-ranking." }
+            "shot_scale": {
+              "$ref": "#/$defs/ShotScale"
+            },
+            "shot_scale_tolerance": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 3,
+              "default": 1,
+              "description": "Buckets of slack permitted."
+            },
+            "camera_motion": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/CameraMotion"
+              },
+              "default": [
+                "any"
+              ]
+            },
+            "camera_height": {
+              "$ref": "#/$defs/CameraHeight"
+            },
+            "subject_class": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/SubjectClass"
+              },
+              "default": [
+                "any"
+              ]
+            },
+            "narrative_role": {
+              "$ref": "#/$defs/NarrativeRole"
+            },
+            "composition": {
+              "$ref": "#/$defs/Composition"
+            },
+            "motion_energy": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1
+            },
+            "motion_energy_tolerance": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1,
+              "default": 0.25
+            },
+            "motion_direction_deg": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "minimum": -180,
+              "maximum": 180,
+              "description": "Required for whip-pan and directional transitions to work."
+            },
+            "min_quality": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1,
+              "default": 0.5
+            },
+            "requires_face": {
+              "type": "boolean",
+              "default": false
+            },
+            "requires_speech": {
+              "type": "boolean",
+              "default": false
+            },
+            "semantic_vec": {
+              "type": [
+                "array",
+                "null"
+              ],
+              "items": {
+                "type": "number"
+              }
+            },
+            "semantic_hint": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "maxLength": 300,
+              "description": "Natural-language description of the reference shot, for VLM re-ranking."
+            }
           }
         },
-        "allow_reuse": { "type": "boolean", "default": true },
-        "reuse_penalty": { "type": "number", "minimum": 0, "maximum": 1, "default": 0.35 },
-        "droppable": { "type": "boolean", "default": true, "description": "May be removed under insufficient footage." },
-        "assignment": { "$ref": "#/$defs/Assignment" }
+        "allow_reuse": {
+          "type": "boolean",
+          "default": true
+        },
+        "reuse_penalty": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "default": 0.35
+        },
+        "droppable": {
+          "type": "boolean",
+          "default": true,
+          "description": "May be removed under insufficient footage."
+        },
+        "assignment": {
+          "$ref": "#/$defs/Assignment"
+        }
       }
     },
-
     "Assignment": {
       "type": "object",
       "description": "Resolved at match time. Absent in a fresh blueprint; present in a project-bound one.",
-      "required": ["segment_id", "in_ms", "out_ms"],
+      "required": [
+        "segment_id",
+        "in_ms",
+        "out_ms"
+      ],
       "additionalProperties": false,
       "properties": {
-        "segment_id": { "type": "string" },
-        "in_ms":  { "$ref": "#/$defs/Ms" },
-        "out_ms": { "$ref": "#/$defs/Ms" },
-        "score":  { "type": "number", "minimum": 0, "maximum": 1 },
-        "reason": { "type": ["string", "null"], "maxLength": 300, "description": "Surfaced in the swap UI. Explaining the choice is what makes corrections informative." },
-        "locked": { "type": "boolean", "default": false, "description": "User pinned this. The matcher must not move it." }
+        "segment_id": {
+          "type": "string"
+        },
+        "in_ms": {
+          "$ref": "#/$defs/Ms"
+        },
+        "out_ms": {
+          "$ref": "#/$defs/Ms"
+        },
+        "score": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "reason": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "maxLength": 300,
+          "description": "Surfaced in the swap UI. Explaining the choice is what makes corrections informative."
+        },
+        "locked": {
+          "type": "boolean",
+          "default": false,
+          "description": "User pinned this. The matcher must not move it."
+        }
       }
     },
-
     "Cut": {
       "type": "object",
-      "required": ["index", "t_ms", "mode"],
+      "required": [
+        "index",
+        "t_ms",
+        "mode"
+      ],
       "additionalProperties": false,
       "properties": {
-        "index":  { "type": "integer", "minimum": 0 },
-        "t_ms":   { "$ref": "#/$defs/Ms" },
-        "mode":   { "type": "string", "enum": ["on_beat", "subdivided", "free", "impact"] },
-        "beat_index":   { "type": ["integer", "null"], "minimum": 0 },
-        "offset_ms":    { "type": "number", "minimum": -500, "maximum": 500, "description": "Signed offset from the anchor beat. Negative = early. Preserving this is a large part of why output feels professionally cut." },
-        "subdivision":  { "type": ["string", "null"], "enum": ["1", "1/2", "1/3", "1/4", "1/8", "2/3", "3/4", null] },
-        "hide_in_motion": { "type": "boolean", "default": false, "description": "Renderer may nudge +/-3 frames to a motion-energy peak." },
-        "from_slot": { "type": ["integer", "null"], "minimum": 0 },
-        "to_slot":   { "type": ["integer", "null"], "minimum": 0 }
+        "index": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "t_ms": {
+          "$ref": "#/$defs/Ms"
+        },
+        "mode": {
+          "type": "string",
+          "enum": [
+            "on_beat",
+            "subdivided",
+            "free",
+            "impact"
+          ]
+        },
+        "beat_index": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "offset_ms": {
+          "type": "number",
+          "minimum": -500,
+          "maximum": 500,
+          "description": "Signed offset from the anchor beat. Negative = early. Preserving this is a large part of why output feels professionally cut."
+        },
+        "subdivision": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "enum": [
+            "1",
+            "1/2",
+            "1/3",
+            "1/4",
+            "1/8",
+            "2/3",
+            "3/4",
+            null
+          ]
+        },
+        "hide_in_motion": {
+          "type": "boolean",
+          "default": false,
+          "description": "Renderer may nudge +/-3 frames to a motion-energy peak."
+        },
+        "from_slot": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "to_slot": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0
+        }
       }
     },
-
     "TransitionType": {
       "type": "string",
-      "enum": ["hard_cut", "cross_dissolve", "fade_black", "fade_white", "flash", "blur", "zoom_in", "zoom_out",
-               "whip_pan", "spin", "motion_blur", "rgb_split", "film_burn", "light_leak", "shake", "glitch",
-               "mask_wipe", "luma_wipe", "push", "slide", "morph", "custom"]
+      "enum": [
+        "hard_cut",
+        "cross_dissolve",
+        "fade_black",
+        "fade_white",
+        "flash",
+        "blur",
+        "zoom_in",
+        "zoom_out",
+        "whip_pan",
+        "spin",
+        "motion_blur",
+        "rgb_split",
+        "film_burn",
+        "light_leak",
+        "shake",
+        "glitch",
+        "mask_wipe",
+        "luma_wipe",
+        "push",
+        "slide",
+        "morph",
+        "custom"
+      ]
     },
-
     "Transition": {
       "type": "object",
-      "required": ["at_cut", "type", "duration_ms"],
+      "required": [
+        "at_cut",
+        "type",
+        "duration_ms"
+      ],
       "additionalProperties": false,
       "properties": {
-        "at_cut":      { "type": "integer", "minimum": 0, "description": "Index into cuts[]." },
-        "type":        { "$ref": "#/$defs/TransitionType" },
-        "secondary":   { "type": "array", "items": { "$ref": "#/$defs/TransitionType" }, "default": [], "description": "Layered transitions. A whip pan is usually also motion_blur." },
-        "duration_ms": { "type": "integer", "minimum": 0, "maximum": 4000 },
-        "intensity":   { "type": "number", "minimum": 0, "maximum": 1, "default": 0.5 },
-        "direction_deg": { "type": ["number", "null"], "minimum": -180, "maximum": 180 },
-        "easing":      { "$ref": "#/$defs/Easing" },
-        "align":       { "type": "string", "enum": ["centered", "outgoing", "incoming"], "default": "centered", "description": "Where the cut sits within the transition interval." },
-        "params":      { "type": "object", "additionalProperties": true, "default": {} },
-        "confidence":  { "$ref": "#/$defs/Confidence" },
-        "fallback":    { "$ref": "#/$defs/TransitionType", "description": "Used when footage cannot support the primary (e.g. no lateral motion for a whip pan)." }
+        "at_cut": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Index into cuts[]."
+        },
+        "type": {
+          "$ref": "#/$defs/TransitionType"
+        },
+        "secondary": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/TransitionType"
+          },
+          "default": [],
+          "description": "Layered transitions. A whip pan is usually also motion_blur."
+        },
+        "duration_ms": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 4000
+        },
+        "intensity": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "default": 0.5
+        },
+        "direction_deg": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": -180,
+          "maximum": 180
+        },
+        "easing": {
+          "$ref": "#/$defs/Easing"
+        },
+        "align": {
+          "type": "string",
+          "enum": [
+            "centered",
+            "outgoing",
+            "incoming"
+          ],
+          "default": "centered",
+          "description": "Where the cut sits within the transition interval."
+        },
+        "params": {
+          "type": "object",
+          "additionalProperties": true,
+          "default": {}
+        },
+        "confidence": {
+          "$ref": "#/$defs/Confidence"
+        },
+        "fallback": {
+          "$ref": "#/$defs/TransitionType",
+          "description": "Used when footage cannot support the primary (e.g. no lateral motion for a whip pan)."
+        }
       }
     },
-
     "Keyframe": {
       "type": "object",
-      "required": ["t_ms", "value"],
+      "required": [
+        "t_ms",
+        "value"
+      ],
       "additionalProperties": false,
       "properties": {
-        "t_ms":   { "$ref": "#/$defs/Ms" },
-        "value":  { "type": "number" },
-        "easing": { "$ref": "#/$defs/Easing" }
+        "t_ms": {
+          "$ref": "#/$defs/Ms"
+        },
+        "value": {
+          "type": "number"
+        },
+        "easing": {
+          "$ref": "#/$defs/Easing"
+        }
       }
     },
-
     "MotionTrack": {
       "type": "object",
       "description": "Synthetic camera motion applied to a still or moving clip: push-in, drift, rotate.",
-      "required": ["slot", "kind", "keyframes"],
+      "required": [
+        "slot",
+        "kind",
+        "keyframes"
+      ],
       "additionalProperties": false,
       "properties": {
-        "slot": { "type": "integer", "minimum": 0 },
-        "kind": { "type": "string", "enum": ["scale", "pos_x", "pos_y", "rotation", "opacity", "anchor_x", "anchor_y"] },
-        "keyframes": { "type": "array", "items": { "$ref": "#/$defs/Keyframe" }, "minItems": 2 },
-        "relative_to_subject": { "type": "boolean", "default": false, "description": "Anchor the motion on the tracked subject centroid rather than frame centre." }
+        "slot": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "kind": {
+          "type": "string",
+          "enum": [
+            "scale",
+            "pos_x",
+            "pos_y",
+            "rotation",
+            "opacity",
+            "anchor_x",
+            "anchor_y"
+          ]
+        },
+        "keyframes": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Keyframe"
+          },
+          "minItems": 2
+        },
+        "relative_to_subject": {
+          "type": "boolean",
+          "default": false,
+          "description": "Anchor the motion on the tracked subject centroid rather than frame centre."
+        }
       }
     },
-
     "SpeedTrack": {
       "type": "object",
-      "required": ["slot", "mode"],
+      "required": [
+        "slot",
+        "mode"
+      ],
       "additionalProperties": false,
       "properties": {
-        "slot": { "type": "integer", "minimum": 0 },
-        "mode": { "type": "string", "enum": ["constant", "ramp", "freeze", "reverse", "timelapse", "hyperlapse"] },
-        "factor": { "type": "number", "exclusiveMinimum": 0, "maximum": 100, "default": 1.0, "description": "For mode=constant. <1 is slow motion." },
-        "keyframes": { "type": "array", "items": { "$ref": "#/$defs/Keyframe" }, "default": [], "description": "For mode=ramp. value = speed factor." },
-        "freeze_at_ms": { "type": ["integer", "null"], "minimum": 0 },
-        "freeze_hold_ms": { "type": ["integer", "null"], "minimum": 0 },
-        "interpolation": { "type": "string", "enum": ["nearest", "blend", "optical_flow"], "default": "blend", "description": "optical_flow is expensive; reserved for Pro export." },
-        "preserve_audio_pitch": { "type": "boolean", "default": true },
-        "confidence": { "$ref": "#/$defs/Confidence" }
+        "slot": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "mode": {
+          "type": "string",
+          "enum": [
+            "constant",
+            "ramp",
+            "freeze",
+            "reverse",
+            "timelapse",
+            "hyperlapse"
+          ]
+        },
+        "factor": {
+          "type": "number",
+          "exclusiveMinimum": 0,
+          "maximum": 100,
+          "default": 1.0,
+          "description": "For mode=constant. <1 is slow motion."
+        },
+        "keyframes": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Keyframe"
+          },
+          "default": [],
+          "description": "For mode=ramp. value = speed factor."
+        },
+        "freeze_at_ms": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "freeze_hold_ms": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "interpolation": {
+          "type": "string",
+          "enum": [
+            "nearest",
+            "blend",
+            "optical_flow"
+          ],
+          "default": "blend",
+          "description": "optical_flow is expensive; reserved for Pro export."
+        },
+        "preserve_audio_pitch": {
+          "type": "boolean",
+          "default": true
+        },
+        "confidence": {
+          "$ref": "#/$defs/Confidence"
+        }
       }
     },
-
     "EffectType": {
       "type": "string",
-      "enum": ["glow", "bloom", "film_grain", "vhs", "crt", "chromatic_aberration", "lens_distortion",
-               "gaussian_blur", "radial_blur", "directional_blur", "sharpen", "vignette", "noise",
-               "particles", "light_leak", "dust_overlay", "halation", "scanlines", "pixelate",
-               "datamosh", "prism", "shake", "letterbox"]
+      "enum": [
+        "glow",
+        "bloom",
+        "film_grain",
+        "vhs",
+        "crt",
+        "chromatic_aberration",
+        "lens_distortion",
+        "gaussian_blur",
+        "radial_blur",
+        "directional_blur",
+        "sharpen",
+        "vignette",
+        "noise",
+        "particles",
+        "light_leak",
+        "dust_overlay",
+        "halation",
+        "scanlines",
+        "pixelate",
+        "datamosh",
+        "prism",
+        "shake",
+        "letterbox"
+      ]
     },
-
     "EffectInstance": {
       "type": "object",
-      "required": ["type", "scope"],
+      "required": [
+        "type",
+        "scope"
+      ],
       "additionalProperties": false,
       "properties": {
-        "type":  { "$ref": "#/$defs/EffectType" },
-        "scope": { "type": "string", "enum": ["global", "section", "slot", "range"] },
-        "slot":     { "type": ["integer", "null"], "minimum": 0 },
-        "section":  { "type": ["integer", "null"], "minimum": 0 },
-        "t_in_ms":  { "type": ["integer", "null"], "minimum": 0 },
-        "t_out_ms": { "type": ["integer", "null"], "minimum": 0 },
-        "intensity": { "type": "number", "minimum": 0, "maximum": 1, "default": 0.5 },
-        "keyframes": { "type": "array", "items": { "$ref": "#/$defs/Keyframe" }, "default": [], "description": "Animates intensity." },
-        "params": { "type": "object", "additionalProperties": true, "default": {} },
-        "blend_mode": { "type": "string", "enum": ["normal", "screen", "add", "overlay", "soft_light", "multiply"], "default": "normal" },
-        "confidence": { "$ref": "#/$defs/Confidence" }
+        "type": {
+          "$ref": "#/$defs/EffectType"
+        },
+        "scope": {
+          "type": "string",
+          "enum": [
+            "global",
+            "section",
+            "slot",
+            "range"
+          ]
+        },
+        "slot": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "section": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "t_in_ms": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "t_out_ms": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "intensity": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "default": 0.5
+        },
+        "keyframes": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Keyframe"
+          },
+          "default": [],
+          "description": "Animates intensity."
+        },
+        "params": {
+          "type": "object",
+          "additionalProperties": true,
+          "default": {}
+        },
+        "blend_mode": {
+          "type": "string",
+          "enum": [
+            "normal",
+            "screen",
+            "add",
+            "overlay",
+            "soft_light",
+            "multiply"
+          ],
+          "default": "normal"
+        },
+        "confidence": {
+          "$ref": "#/$defs/Confidence"
+        }
       }
     },
-
     "Grade": {
       "type": "object",
       "description": "Parametric, not a recovered LUT. See docs/08 section 5 for why exact LUT recovery is not possible from a delivered video.",
       "additionalProperties": false,
       "properties": {
-        "confidence": { "$ref": "#/$defs/Confidence" },
-        "global": { "$ref": "#/$defs/GradeParams" },
+        "confidence": {
+          "$ref": "#/$defs/Confidence"
+        },
+        "global": {
+          "$ref": "#/$defs/GradeParams"
+        },
         "per_slot": {
           "type": "array",
           "items": {
             "type": "object",
-            "required": ["slot", "params"],
+            "required": [
+              "slot",
+              "params"
+            ],
             "additionalProperties": false,
             "properties": {
-              "slot":   { "type": "integer", "minimum": 0 },
-              "params": { "$ref": "#/$defs/GradeParams" }
+              "slot": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "params": {
+                "$ref": "#/$defs/GradeParams"
+              }
             }
           },
           "default": []
         },
-        "lut_ref": { "type": ["string", "null"], "description": "Optional ID of a LICENSED LUT from our library that best approximates the measured look. Never a LUT extracted from the reference." },
+        "lut_ref": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Optional ID of a LICENSED LUT from our library that best approximates the measured look. Never a LUT extracted from the reference."
+        },
         "match_target": {
           "type": "object",
           "description": "Measured colour statistics of the reference. The renderer optimises the user's footage toward these rather than blindly applying params.",
           "additionalProperties": false,
           "properties": {
-            "luma_percentiles":   { "type": "object", "additionalProperties": { "type": "number" } },
-            "mean_lab":           { "type": "array", "items": { "type": "number" }, "minItems": 3, "maxItems": 3 },
-            "sat_mean":           { "type": "number", "minimum": 0, "maximum": 2 },
-            "shadow_hue_deg":     { "type": "number", "minimum": 0, "maximum": 360 },
-            "highlight_hue_deg":  { "type": "number", "minimum": 0, "maximum": 360 },
-            "split_tone_strength":{ "type": "number", "minimum": 0, "maximum": 1 }
+            "luma_percentiles": {
+              "type": "object",
+              "additionalProperties": {
+                "type": "number"
+              }
+            },
+            "mean_lab": {
+              "type": "array",
+              "items": {
+                "type": "number"
+              },
+              "minItems": 3,
+              "maxItems": 3
+            },
+            "sat_mean": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 2
+            },
+            "shadow_hue_deg": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 360
+            },
+            "highlight_hue_deg": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 360
+            },
+            "split_tone_strength": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1
+            }
           }
         }
       }
     },
-
     "GradeParams": {
       "type": "object",
       "additionalProperties": false,
       "properties": {
-        "exposure":    { "type": "number", "minimum": -4, "maximum": 4, "default": 0, "description": "Stops." },
-        "contrast":    { "type": "number", "minimum": -1, "maximum": 1, "default": 0 },
-        "pivot":       { "type": "number", "minimum": 0, "maximum": 1, "default": 0.435 },
-        "saturation":  { "type": "number", "minimum": 0, "maximum": 3, "default": 1 },
-        "vibrance":    { "type": "number", "minimum": -1, "maximum": 1, "default": 0 },
-        "temperature": { "type": "number", "minimum": -1, "maximum": 1, "default": 0 },
-        "tint":        { "type": "number", "minimum": -1, "maximum": 1, "default": 0 },
-        "lift":  { "type": "array", "items": { "type": "number", "minimum": -1, "maximum": 1 }, "minItems": 3, "maxItems": 3, "default": [0, 0, 0] },
-        "gamma": { "type": "array", "items": { "type": "number", "minimum": 0.1, "maximum": 4 },  "minItems": 3, "maxItems": 3, "default": [1, 1, 1] },
-        "gain":  { "type": "array", "items": { "type": "number", "minimum": 0, "maximum": 4 },    "minItems": 3, "maxItems": 3, "default": [1, 1, 1] },
-        "shadows":    { "type": "number", "minimum": -1, "maximum": 1, "default": 0 },
-        "highlights": { "type": "number", "minimum": -1, "maximum": 1, "default": 0 },
-        "whites":     { "type": "number", "minimum": -1, "maximum": 1, "default": 0 },
-        "blacks":     { "type": "number", "minimum": -1, "maximum": 1, "default": 0 },
+        "exposure": {
+          "type": "number",
+          "minimum": -4,
+          "maximum": 4,
+          "default": 0,
+          "description": "Stops."
+        },
+        "contrast": {
+          "type": "number",
+          "minimum": -1,
+          "maximum": 1,
+          "default": 0
+        },
+        "pivot": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "default": 0.435
+        },
+        "saturation": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 3,
+          "default": 1
+        },
+        "vibrance": {
+          "type": "number",
+          "minimum": -1,
+          "maximum": 1,
+          "default": 0
+        },
+        "temperature": {
+          "type": "number",
+          "minimum": -1,
+          "maximum": 1,
+          "default": 0
+        },
+        "tint": {
+          "type": "number",
+          "minimum": -1,
+          "maximum": 1,
+          "default": 0
+        },
+        "lift": {
+          "type": "array",
+          "items": {
+            "type": "number",
+            "minimum": -1,
+            "maximum": 1
+          },
+          "minItems": 3,
+          "maxItems": 3,
+          "default": [
+            0,
+            0,
+            0
+          ]
+        },
+        "gamma": {
+          "type": "array",
+          "items": {
+            "type": "number",
+            "minimum": 0.1,
+            "maximum": 4
+          },
+          "minItems": 3,
+          "maxItems": 3,
+          "default": [
+            1,
+            1,
+            1
+          ]
+        },
+        "gain": {
+          "type": "array",
+          "items": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 4
+          },
+          "minItems": 3,
+          "maxItems": 3,
+          "default": [
+            1,
+            1,
+            1
+          ]
+        },
+        "shadows": {
+          "type": "number",
+          "minimum": -1,
+          "maximum": 1,
+          "default": 0
+        },
+        "highlights": {
+          "type": "number",
+          "minimum": -1,
+          "maximum": 1,
+          "default": 0
+        },
+        "whites": {
+          "type": "number",
+          "minimum": -1,
+          "maximum": 1,
+          "default": 0
+        },
+        "blacks": {
+          "type": "number",
+          "minimum": -1,
+          "maximum": 1,
+          "default": 0
+        },
         "split_tone": {
           "type": "object",
           "additionalProperties": false,
           "properties": {
-            "shadow_hue_deg":    { "type": "number", "minimum": 0, "maximum": 360, "default": 210 },
-            "shadow_sat":        { "type": "number", "minimum": 0, "maximum": 1, "default": 0 },
-            "highlight_hue_deg": { "type": "number", "minimum": 0, "maximum": 360, "default": 40 },
-            "highlight_sat":     { "type": "number", "minimum": 0, "maximum": 1, "default": 0 },
-            "balance":           { "type": "number", "minimum": -1, "maximum": 1, "default": 0 }
+            "shadow_hue_deg": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 360,
+              "default": 210
+            },
+            "shadow_sat": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1,
+              "default": 0
+            },
+            "highlight_hue_deg": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 360,
+              "default": 40
+            },
+            "highlight_sat": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1,
+              "default": 0
+            },
+            "balance": {
+              "type": "number",
+              "minimum": -1,
+              "maximum": 1,
+              "default": 0
+            }
           }
         },
         "hsl": {
@@ -483,179 +1705,623 @@
           "description": "Per-hue-band qualifier adjustments.",
           "items": {
             "type": "object",
-            "required": ["band"],
+            "required": [
+              "band"
+            ],
             "additionalProperties": false,
             "properties": {
-              "band": { "type": "string", "enum": ["red", "orange", "yellow", "green", "aqua", "blue", "purple", "magenta"] },
-              "hue_shift_deg": { "type": "number", "minimum": -60, "maximum": 60, "default": 0 },
-              "sat":   { "type": "number", "minimum": -1, "maximum": 1, "default": 0 },
-              "lum":   { "type": "number", "minimum": -1, "maximum": 1, "default": 0 }
+              "band": {
+                "type": "string",
+                "enum": [
+                  "red",
+                  "orange",
+                  "yellow",
+                  "green",
+                  "aqua",
+                  "blue",
+                  "purple",
+                  "magenta"
+                ]
+              },
+              "hue_shift_deg": {
+                "type": "number",
+                "minimum": -60,
+                "maximum": 60,
+                "default": 0
+              },
+              "sat": {
+                "type": "number",
+                "minimum": -1,
+                "maximum": 1,
+                "default": 0
+              },
+              "lum": {
+                "type": "number",
+                "minimum": -1,
+                "maximum": 1,
+                "default": 0
+              }
             }
           },
           "default": []
         }
       }
     },
-
     "CaptionTrack": {
       "type": "object",
       "additionalProperties": false,
       "properties": {
-        "enabled": { "type": "boolean", "default": false },
-        "mode": { "type": "string", "enum": ["word_by_word", "karaoke", "phrase", "line", "static", "none"], "default": "none" },
-        "source": { "type": "string", "enum": ["asr", "user", "none"], "default": "asr" },
-        "style": { "$ref": "#/$defs/TextStyle" },
-        "max_words_per_chunk": { "type": "integer", "minimum": 1, "maximum": 20, "default": 3 },
-        "position": { "$ref": "#/$defs/Position" },
+        "enabled": {
+          "type": "boolean",
+          "default": false
+        },
+        "mode": {
+          "type": "string",
+          "enum": [
+            "word_by_word",
+            "karaoke",
+            "phrase",
+            "line",
+            "static",
+            "none"
+          ],
+          "default": "none"
+        },
+        "source": {
+          "type": "string",
+          "enum": [
+            "asr",
+            "user",
+            "none"
+          ],
+          "default": "asr"
+        },
+        "style": {
+          "$ref": "#/$defs/TextStyle"
+        },
+        "max_words_per_chunk": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 20,
+          "default": 3
+        },
+        "position": {
+          "$ref": "#/$defs/Position"
+        },
         "active_word_style": {
           "$ref": "#/$defs/TextStyle",
           "description": "For karaoke mode: how the currently-spoken word differs."
         },
-        "entry": { "$ref": "#/$defs/TextAnimation" },
-        "exit":  { "$ref": "#/$defs/TextAnimation" },
-        "lead_ms":  { "type": "integer", "minimum": -300, "maximum": 300, "default": 0, "description": "Offset from the ASR word timestamp." },
-        "confidence": { "$ref": "#/$defs/Confidence" }
+        "entry": {
+          "$ref": "#/$defs/TextAnimation"
+        },
+        "exit": {
+          "$ref": "#/$defs/TextAnimation"
+        },
+        "lead_ms": {
+          "type": "integer",
+          "minimum": -300,
+          "maximum": 300,
+          "default": 0,
+          "description": "Offset from the ASR word timestamp."
+        },
+        "confidence": {
+          "$ref": "#/$defs/Confidence"
+        }
       }
     },
-
     "Position": {
       "type": "object",
       "additionalProperties": false,
       "properties": {
-        "x_pct": { "type": "number", "minimum": -50, "maximum": 150, "default": 50 },
-        "y_pct": { "type": "number", "minimum": -50, "maximum": 150, "default": 78 },
-        "anchor": { "type": "string", "enum": ["center", "top_left", "top_center", "top_right", "center_left", "center_right", "bottom_left", "bottom_center", "bottom_right"], "default": "center" }
+        "x_pct": {
+          "type": "number",
+          "minimum": -50,
+          "maximum": 150,
+          "default": 50
+        },
+        "y_pct": {
+          "type": "number",
+          "minimum": -50,
+          "maximum": 150,
+          "default": 78
+        },
+        "anchor": {
+          "type": "string",
+          "enum": [
+            "center",
+            "top_left",
+            "top_center",
+            "top_right",
+            "center_left",
+            "center_right",
+            "bottom_left",
+            "bottom_center",
+            "bottom_right"
+          ],
+          "default": "center"
+        }
       }
     },
-
     "TextStyle": {
       "type": "object",
       "description": "font_family is a CLASSIFIED family mapped to a licensed font, not an identified typeface. Exact font identification from compressed video is unreliable.",
       "additionalProperties": false,
       "properties": {
-        "font_family": { "type": "string", "enum": ["sans_geometric", "sans_grotesque", "sans_rounded", "sans_condensed", "serif", "slab", "display_heavy", "handwritten", "mono"], "default": "sans_grotesque" },
-        "font_id":     { "type": ["string", "null"], "description": "Resolved licensed font asset." },
-        "weight":      { "type": "integer", "enum": [100, 200, 300, 400, 500, 600, 700, 800, 900], "default": 800 },
-        "italic":      { "type": "boolean", "default": false },
-        "uppercase":   { "type": "boolean", "default": true },
-        "size_pct":    { "type": "number", "minimum": 0.5, "maximum": 40, "default": 6.5, "description": "Cap height as a percentage of frame height." },
-        "letter_spacing": { "type": "number", "minimum": -0.2, "maximum": 1, "default": 0 },
-        "line_height": { "type": "number", "minimum": 0.6, "maximum": 3, "default": 1.15 },
-        "color":       { "type": "string", "pattern": "^#[0-9a-fA-F]{6}$", "default": "#FFFFFF" },
-        "stroke_color":{ "type": "string", "pattern": "^#[0-9a-fA-F]{6}$", "default": "#000000" },
-        "stroke_width_px": { "type": "number", "minimum": 0, "maximum": 40, "default": 0 },
+        "font_family": {
+          "type": "string",
+          "enum": [
+            "sans_geometric",
+            "sans_grotesque",
+            "sans_rounded",
+            "sans_condensed",
+            "serif",
+            "slab",
+            "display_heavy",
+            "handwritten",
+            "mono"
+          ],
+          "default": "sans_grotesque"
+        },
+        "font_id": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Resolved licensed font asset."
+        },
+        "weight": {
+          "type": "integer",
+          "enum": [
+            100,
+            200,
+            300,
+            400,
+            500,
+            600,
+            700,
+            800,
+            900
+          ],
+          "default": 800
+        },
+        "italic": {
+          "type": "boolean",
+          "default": false
+        },
+        "uppercase": {
+          "type": "boolean",
+          "default": true
+        },
+        "size_pct": {
+          "type": "number",
+          "minimum": 0.5,
+          "maximum": 40,
+          "default": 6.5,
+          "description": "Cap height as a percentage of frame height."
+        },
+        "letter_spacing": {
+          "type": "number",
+          "minimum": -0.2,
+          "maximum": 1,
+          "default": 0
+        },
+        "line_height": {
+          "type": "number",
+          "minimum": 0.6,
+          "maximum": 3,
+          "default": 1.15
+        },
+        "color": {
+          "type": "string",
+          "pattern": "^#[0-9a-fA-F]{6}$",
+          "default": "#FFFFFF"
+        },
+        "stroke_color": {
+          "type": "string",
+          "pattern": "^#[0-9a-fA-F]{6}$",
+          "default": "#000000"
+        },
+        "stroke_width_px": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 40,
+          "default": 0
+        },
         "shadow": {
           "type": "object",
           "additionalProperties": false,
           "properties": {
-            "enabled":  { "type": "boolean", "default": false },
-            "color":    { "type": "string", "pattern": "^#[0-9a-fA-F]{6}$", "default": "#000000" },
-            "opacity":  { "type": "number", "minimum": 0, "maximum": 1, "default": 0.5 },
-            "blur_px":  { "type": "number", "minimum": 0, "maximum": 60, "default": 8 },
-            "offset_x": { "type": "number", "default": 0 },
-            "offset_y": { "type": "number", "default": 4 }
+            "enabled": {
+              "type": "boolean",
+              "default": false
+            },
+            "color": {
+              "type": "string",
+              "pattern": "^#[0-9a-fA-F]{6}$",
+              "default": "#000000"
+            },
+            "opacity": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1,
+              "default": 0.5
+            },
+            "blur_px": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 60,
+              "default": 8
+            },
+            "offset_x": {
+              "type": "number",
+              "default": 0
+            },
+            "offset_y": {
+              "type": "number",
+              "default": 4
+            }
           }
         },
         "background": {
           "type": "object",
           "additionalProperties": false,
           "properties": {
-            "enabled": { "type": "boolean", "default": false },
-            "color":   { "type": "string", "pattern": "^#[0-9a-fA-F]{6}$", "default": "#000000" },
-            "opacity": { "type": "number", "minimum": 0, "maximum": 1, "default": 0.6 },
-            "padding_px": { "type": "number", "minimum": 0, "maximum": 80, "default": 12 },
-            "radius_px":  { "type": "number", "minimum": 0, "maximum": 80, "default": 8 }
+            "enabled": {
+              "type": "boolean",
+              "default": false
+            },
+            "color": {
+              "type": "string",
+              "pattern": "^#[0-9a-fA-F]{6}$",
+              "default": "#000000"
+            },
+            "opacity": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1,
+              "default": 0.6
+            },
+            "padding_px": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 80,
+              "default": 12
+            },
+            "radius_px": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 80,
+              "default": 8
+            }
           }
         }
       }
     },
-
     "TextAnimation": {
       "type": "object",
       "additionalProperties": false,
       "properties": {
-        "kind": { "type": "string", "enum": ["none", "fade", "slide_up", "slide_down", "slide_left", "slide_right", "pop", "bounce", "typewriter", "scale_in", "blur_in", "wipe", "shake"], "default": "none" },
-        "duration_ms": { "type": "integer", "minimum": 0, "maximum": 2000, "default": 180 },
-        "easing": { "$ref": "#/$defs/Easing" },
-        "overshoot": { "type": "number", "minimum": 0, "maximum": 1, "default": 0, "description": "For pop/bounce." },
-        "stagger_ms": { "type": "integer", "minimum": 0, "maximum": 500, "default": 0, "description": "Per-character or per-word delay." }
+        "kind": {
+          "type": "string",
+          "enum": [
+            "none",
+            "fade",
+            "slide_up",
+            "slide_down",
+            "slide_left",
+            "slide_right",
+            "pop",
+            "bounce",
+            "typewriter",
+            "scale_in",
+            "blur_in",
+            "wipe",
+            "shake"
+          ],
+          "default": "none"
+        },
+        "duration_ms": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 2000,
+          "default": 180
+        },
+        "easing": {
+          "$ref": "#/$defs/Easing"
+        },
+        "overshoot": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "default": 0,
+          "description": "For pop/bounce."
+        },
+        "stagger_ms": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 500,
+          "default": 0,
+          "description": "Per-character or per-word delay."
+        }
       }
     },
-
     "TextObject": {
       "type": "object",
       "description": "Titles, lower-thirds and graphics that are NOT speech captions.",
-      "required": ["id", "t_in_ms", "t_out_ms", "style"],
+      "required": [
+        "id",
+        "t_in_ms",
+        "t_out_ms",
+        "style"
+      ],
       "additionalProperties": false,
       "properties": {
-        "id":       { "type": "string" },
-        "t_in_ms":  { "$ref": "#/$defs/Ms" },
-        "t_out_ms": { "$ref": "#/$defs/Ms" },
-        "content":  { "type": ["string", "null"], "maxLength": 500, "description": "Null means the user must supply. We never copy the reference's words." },
-        "placeholder": { "type": ["string", "null"], "maxLength": 200 },
-        "style":    { "$ref": "#/$defs/TextStyle" },
-        "position": { "$ref": "#/$defs/Position" },
-        "entry":    { "$ref": "#/$defs/TextAnimation" },
-        "exit":     { "$ref": "#/$defs/TextAnimation" },
-        "motion":   { "type": "array", "items": { "$ref": "#/$defs/MotionTrack" }, "default": [] }
+        "id": {
+          "type": "string"
+        },
+        "t_in_ms": {
+          "$ref": "#/$defs/Ms"
+        },
+        "t_out_ms": {
+          "$ref": "#/$defs/Ms"
+        },
+        "content": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "maxLength": 500,
+          "description": "Null means the user must supply. We never copy the reference's words."
+        },
+        "placeholder": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "maxLength": 200
+        },
+        "style": {
+          "$ref": "#/$defs/TextStyle"
+        },
+        "position": {
+          "$ref": "#/$defs/Position"
+        },
+        "entry": {
+          "$ref": "#/$defs/TextAnimation"
+        },
+        "exit": {
+          "$ref": "#/$defs/TextAnimation"
+        },
+        "motion": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/MotionTrack"
+          },
+          "default": []
+        }
       }
     },
-
     "ReframeTrack": {
       "type": "object",
       "description": "How source footage is cropped/panned into the canvas. Subject-aware, not centre-crop.",
-      "required": ["slot", "mode"],
+      "required": [
+        "slot",
+        "mode"
+      ],
       "additionalProperties": false,
       "properties": {
-        "slot": { "type": "integer", "minimum": 0 },
-        "mode": { "type": "string", "enum": ["fit", "fill_center", "fill_subject", "track_subject", "manual", "blurred_bars"], "default": "fill_subject" },
-        "subject_query": { "type": ["string", "null"], "description": "Concept prompt handed to the segmentation model, e.g. 'the motorcycle'." },
-        "smoothing": { "type": "number", "minimum": 0, "maximum": 1, "default": 0.7, "description": "Higher = lazier virtual camera. Prevents jitter from per-frame mask noise." },
-        "max_pan_speed_pct_per_s": { "type": "number", "minimum": 0, "maximum": 200, "default": 35 },
-        "keyframes": { "type": "array", "items": { "$ref": "#/$defs/Keyframe" }, "default": [] },
-        "padding_pct": { "type": "number", "minimum": 0, "maximum": 50, "default": 8 }
+        "slot": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "mode": {
+          "type": "string",
+          "enum": [
+            "fit",
+            "fill_center",
+            "fill_subject",
+            "track_subject",
+            "manual",
+            "blurred_bars"
+          ],
+          "default": "fill_subject"
+        },
+        "subject_query": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Concept prompt handed to the segmentation model, e.g. 'the motorcycle'."
+        },
+        "smoothing": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "default": 0.7,
+          "description": "Higher = lazier virtual camera. Prevents jitter from per-frame mask noise."
+        },
+        "max_pan_speed_pct_per_s": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 200,
+          "default": 35
+        },
+        "keyframes": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Keyframe"
+          },
+          "default": []
+        },
+        "padding_pct": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 50,
+          "default": 8
+        }
       }
     },
-
     "Constraints": {
       "type": "object",
       "description": "Invariants the renderer must not violate. These are what stop degradation from producing garbage.",
       "additionalProperties": false,
       "properties": {
-        "min_shot_ms": { "type": "integer", "minimum": 40, "default": 180, "description": "Below ~180ms a shot is not perceived as a shot." },
-        "max_shot_ms": { "type": "integer", "minimum": 100, "default": 8000 },
-        "max_consecutive_same_scale":  { "type": "integer", "minimum": 1, "default": 2 },
-        "max_consecutive_same_source": { "type": "integer", "minimum": 1, "default": 1 },
-        "max_segment_reuse": { "type": "integer", "minimum": 1, "default": 3 },
-        "min_reuse_gap_ms":  { "type": "integer", "minimum": 0, "default": 4000 },
-        "forbid_jump_cut_same_source": { "type": "boolean", "default": true },
-        "require_licensed_audio": { "type": "boolean", "const": true, "description": "Not configurable. The renderer refuses to run without a resolved licence." },
-        "max_effect_layers": { "type": "integer", "minimum": 1, "default": 4 }
+        "min_shot_ms": {
+          "type": "integer",
+          "minimum": 40,
+          "default": 180,
+          "description": "Below ~180ms a shot is not perceived as a shot."
+        },
+        "max_shot_ms": {
+          "type": "integer",
+          "minimum": 100,
+          "default": 8000
+        },
+        "max_consecutive_same_scale": {
+          "type": "integer",
+          "minimum": 1,
+          "default": 2
+        },
+        "max_consecutive_same_source": {
+          "type": "integer",
+          "minimum": 1,
+          "default": 1
+        },
+        "max_segment_reuse": {
+          "type": "integer",
+          "minimum": 1,
+          "default": 3
+        },
+        "min_reuse_gap_ms": {
+          "type": "integer",
+          "minimum": 0,
+          "default": 4000
+        },
+        "forbid_jump_cut_same_source": {
+          "type": "boolean",
+          "default": true
+        },
+        "require_licensed_audio": {
+          "type": "boolean",
+          "const": true,
+          "description": "Not configurable. The renderer refuses to run without a resolved licence."
+        },
+        "max_effect_layers": {
+          "type": "integer",
+          "minimum": 1,
+          "default": 4
+        }
       }
     },
-
     "Degradation": {
       "type": "object",
       "description": "Populated by the renderer when the blueprint could not be fully realised. Surfaced in the UI and stamped into export metadata.",
       "additionalProperties": false,
       "properties": {
-        "degraded": { "type": "boolean", "default": false },
+        "degraded": {
+          "type": "boolean",
+          "default": false
+        },
         "compromises": {
           "type": "array",
           "items": {
             "type": "object",
-            "required": ["kind", "detail"],
+            "required": [
+              "kind",
+              "detail"
+            ],
             "additionalProperties": false,
             "properties": {
-              "kind": { "type": "string", "enum": ["slot_dropped", "transition_substituted", "effect_skipped", "speed_flattened", "reuse_exceeded", "quality_below_threshold", "grade_low_confidence", "music_tempo_mismatch"] },
-              "detail": { "type": "string", "maxLength": 300 },
-              "slot": { "type": ["integer", "null"], "minimum": 0 },
-              "severity": { "type": "string", "enum": ["minor", "moderate", "major"], "default": "minor" }
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "slot_dropped",
+                  "transition_substituted",
+                  "effect_skipped",
+                  "speed_flattened",
+                  "reuse_exceeded",
+                  "quality_below_threshold",
+                  "grade_low_confidence",
+                  "music_tempo_mismatch"
+                ]
+              },
+              "detail": {
+                "type": "string",
+                "maxLength": 300
+              },
+              "slot": {
+                "type": [
+                  "integer",
+                  "null"
+                ],
+                "minimum": 0
+              },
+              "severity": {
+                "type": "string",
+                "enum": [
+                  "minor",
+                  "moderate",
+                  "major"
+                ],
+                "default": "minor"
+              }
             }
           },
           "default": []
         },
-        "coverage": { "type": "number", "minimum": 0, "maximum": 1 }
+        "coverage": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        }
+      }
+    },
+    "PlatformAttachCard": {
+      "type": "object",
+      "description": "Instructions for re-attaching the original sound INSIDE the platform, under the platform's own licence. Contains no audio, no download URL and no track file -- only the identifiers a human reads off the screen and the arithmetic to line the sound up with our cuts.",
+      "additionalProperties": false,
+      "properties": {
+        "sound_name": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "maxLength": 300,
+          "description": "Platform-native sound name as displayed. We surface what the reference credits; we do not fetch or host the audio."
+        },
+        "platform": {
+          "type": "string",
+          "enum": [
+            "tiktok",
+            "instagram",
+            "youtube",
+            "unknown"
+          ],
+          "default": "unknown"
+        },
+        "trim_start_ms": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Offset into the platform track where our first frame sits. The number the creator types into the sound-trim control."
+        },
+        "first_downbeat_ms": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Where the first downbeat lands in OUR output, so alignment can be verified visually."
+        },
+        "bpm": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "exclusiveMinimum": 20,
+          "maximum": 300
+        },
+        "instructions": {
+          "type": "string",
+          "maxLength": 600
+        }
       }
     }
   }

@@ -53,7 +53,7 @@ THIRTY_DEGREE_RULE = 30.0
 # ---------------------------------------------------------------------------
 
 
-def motion_compat(required: list[CameraMotion], actual: CameraMotion) -> float:
+def motion_compat(required: list[CameraMotion], actual: CameraMotion) -> float:  # noqa: PLR0911
     """Camera-motion compatibility, by class rather than equality.
 
     A slot asking for ``pan_left`` is well served by ``truck_left`` or
@@ -259,9 +259,9 @@ def seq(
 
     # 30-degree rule: cutting between near-identical angles of the same source
     # is the definition of a jump cut, and the commonest amateur mistake.
-    if a.asset_id == c.asset_id:
-        if angular_distance(a.camera_angle_deg, c.camera_angle_deg) < THIRTY_DEGREE_RULE:
-            s += P_JUMP_CUT
+    if (a.asset_id == c.asset_id
+            and angular_distance(a.camera_angle_deg, c.camera_angle_deg) < THIRTY_DEGREE_RULE):
+        s += P_JUMP_CUT
 
     # Motion continuity. Directional transitions REQUIRE agreement; elsewhere
     # it is merely preferable.

@@ -123,12 +123,17 @@ The blueprint carries the *structure* — 128 BPM, 4/4, drop at 22.4s, energy cu
 
 | Strategy | Meaning | Licence required |
 |---|---|---|
+| `platform_attach` | **Default.** Silent master; the creator attaches the original sound *inside* TikTok/Instagram, under the platform's own blanket licence. We render the edit to that track's real beat grid and emit the trim offset, so it re-syncs on the first try. We never touch the recording. | No — the platform holds it |
 | `catalogue_match` | Retrieved from our licensed catalogue by structural similarity | Yes — `licence_id` mandatory |
 | `user_supplied` | The user's own track, with an attestation of rights | User attests |
 | `silent` | No music bed; SFX only | No |
 | `generated` | AI-generated music matched to the structure (future) | Yes — model licence |
 
 `constraints.require_licensed_audio` is `{"const": true}` in the schema — not a default, not configurable. **The renderer refuses to run without a resolved licence.** A tenant cannot turn this off, a config file cannot override it, and an API caller cannot omit it.
+
+`platform_attach` satisfies this trivially, because it distributes no recording at all: the file we hand the user has no music track. Correspondingly it *must not* carry a `licence_id` — claiming one would misrepresent what we did. That is enforced by a validator, not a convention.
+
+**Why `platform_attach` is the default rather than `catalogue_match`.** Users who admire a reference usually want *that* track, and short-form culture is substantially organised around specific sounds. Substitution is a real downgrade for them. Attaching in-app is not a workaround — it produces a better result than substitution (it is the actual track), it is free, and the platform's licence already covers it. Substitution remains available for users who want an original soundtrack or are publishing off-platform.
 
 ### 3.2 `time_map` — binding structure to a real track
 

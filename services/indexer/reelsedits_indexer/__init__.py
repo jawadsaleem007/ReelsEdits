@@ -1,12 +1,22 @@
 """User footage indexer.
 
-Deliberately a SUBSET of reference analysis: we do not need to know how the
-user's clip was edited, only what it contains and how it moves. Critically it
-uses the IDENTICAL enum vocabulary -- that is what makes matching possible at
-all. See docs/04-ai-pipeline.md part B.
+Reuses the analyser's visual code verbatim. That reuse is the mechanism that
+guarantees reference and footage speak the same enum vocabulary -- without it,
+structural matching silently degrades to embedding similarity, which is the
+wrong objective (docs/09 s1.1).
 """
 
-from .pipeline import ClipFeature, SegmentFeature, index_clip, usable_ranges
+from .index import INDEXER_VERSION, ClipIndex, index_clip, index_directory
+from .pipeline import ClipFeature, SegmentFeature, usable_ranges
 
-__version__ = "0.1.0"
-__all__ = ["ClipFeature", "SegmentFeature", "index_clip", "usable_ranges", "__version__"]
+__version__ = "0.2.0"
+__all__ = [
+    "INDEXER_VERSION",
+    "ClipFeature",
+    "ClipIndex",
+    "SegmentFeature",
+    "__version__",
+    "index_clip",
+    "index_directory",
+    "usable_ranges",
+]
