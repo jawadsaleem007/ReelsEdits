@@ -1,0 +1,32 @@
+# ReelsEdits API. Stateless, no GPU, no media bytes.
+FROM python:3.12-slim AS base
+
+ENV PYTHONUNBUFFERED=1 \
+    PYTHONDONTWRITEBYTECODE=1 \
+    PIP_NO_CACHE_DIR=1
+
+WORKDIR /app
+
+RUN apt-get update \
+ && apt-get install -y --no-install-recommends curl \
+ && rm -rf /var/lib/apt/lists/*
+
+# Local packages first so a change to app code does not reinstall deps.
+COPY services/common  /app/services/common
+COPY services/matcher /app/services/matcher
+RUN pip install -e /app/services/common -e /app/services/matcher
+
+COPY services/api/pyproject.toml /app/services/api/pyproject.toml
+RUN pip install -e /app/services/api
+
+COPY services/api /app/services/api
+WORKDIR /app/services/api
+
+RUN useradd -r -u 10001 reelsedits && chown -R reelsedits /app
+USER reelsedits
+
+EXPOSE 8000
+HEALTHCHECK --interval=15s --timeout=3s --retries=3 \
+  CMD curl -fsS http://localhost:8000/healthz || exit 1
+
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]

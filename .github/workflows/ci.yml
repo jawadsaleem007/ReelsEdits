@@ -1,0 +1,46 @@
+name: CI
+
+on:
+  push: { branches: [main] }
+  pull_request:
+
+jobs:
+  python:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12" }
+
+      - name: Install
+        run: |
+          pip install -e services/common[dev]
+          pip install -e services/matcher
+
+      # The example blueprint is GENERATED from the Pydantic models, so it
+      # cannot silently drift out of sync with them. This step regenerates it
+      # and fails if the committed copy differs.
+      - name: Blueprint example is current
+        run: |
+          python schemas/examples/build_example.py
+          git diff --exit-code schemas/examples/moto-sunset-128bpm.json
+
+      - name: Test common
+        run: cd services/common && PYTHONPATH=. python -m pytest tests -q
+
+      - name: Test matcher
+        run: PYTHONPATH=services/common:services/matcher python -m pytest services/matcher/tests -q
+
+      - name: Lint
+        run: |
+          pip install ruff
+          ruff check services/ schemas/
+
+  docs:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      # Broken cross-links between 21 documents are otherwise found by readers,
+      # which is the expensive way to find them.
+      - name: Check internal doc links
+        run: python3 tools/check_links.py

@@ -2,7 +2,7 @@
 
 **Normative schema:** [`schemas/blueprint.schema.json`](../schemas/blueprint.schema.json) (JSON Schema draft 2020-12, validated in CI)
 **Reference implementation:** [`services/common/reelsedits_common/blueprint.py`](../services/common/reelsedits_common/blueprint.py) (Pydantic v2)
-**Example:** [`schemas/examples/moto-sunset-90bpm.json`](../schemas/examples/moto-sunset-90bpm.json)
+**Example:** [`schemas/examples/moto-sunset-128bpm.json`](../schemas/examples/moto-sunset-128bpm.json) — 25 slots, generated from the models by [`build_example.py`](../schemas/examples/build_example.py) so it cannot drift out of sync
 
 ---
 
