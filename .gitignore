@@ -1,0 +1,74 @@
+# --- sandbox artifacts (undeletable from the mount; safe to remove on Windows) ---
+.tmptest
+zz
+.git.bak/
+
+# --- Python ---
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+build/
+dist/
+.venv/
+venv/
+env/
+.python-version
+.mypy_cache/
+.ruff_cache/
+.pytest_cache/
+.coverage
+htmlcov/
+
+# --- Node / Next.js ---
+node_modules/
+.next/
+out/
+.turbo/
+*.tsbuildinfo
+.pnpm-store/
+
+# --- Env & secrets ---
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+secrets/
+
+# --- Media & model artifacts (never commit binaries) ---
+*.mp4
+*.mov
+*.mkv
+*.webm
+*.wav
+*.mp3
+*.m4a
+*.flac
+*.png
+*.jpg
+*.jpeg
+!docs/**/*.png
+*.pt
+*.pth
+*.onnx
+*.safetensors
+*.gguf
+models/weights/
+data/
+scratch/
+tmp/
+
+# --- Infra ---
+.terraform/
+*.tfstate
+*.tfstate.*
+kubeconfig
+
+# --- Editors / OS ---
+.idea/
+.vscode/
+!.vscode/extensions.json
+.DS_Store
+Thumbs.db
+desktop.ini
