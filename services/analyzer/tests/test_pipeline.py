@@ -312,16 +312,35 @@ def test_render_produces_a_playable_file(bound, tmp_path):
 
 def test_render_is_deterministic(bound, tmp_path):
     """The determinism contract (docs/10 §1) underpins render caching, the
-    marketplace, collaboration and reproducible debugging."""
+    marketplace, collaboration and reproducible debugging.
+
+    Run under deliberate CPU contention. An idle-machine determinism test
+    passes trivially and misses the real failure: ffmpeg threads the filter
+    graph and the encoder independently, both default to the CPU count, and
+    unpinned they produce different bytes on a busy machine than on an idle
+    one. That would corrupt the render cache in any multi-node deployment,
+    where "busy" is the normal state.
+    """
     import hashlib
+    import subprocess
 
     bp, paths, _ = bound
-    digests = []
-    for i in range(2):
-        out = tmp_path / f"det{i}.mp4"
-        render(bp, paths, out, preset="preview")
-        digests.append(hashlib.sha256(out.read_bytes()).hexdigest())
-    assert digests[0] == digests[1], "identical inputs produced different bytes"
+    load = [subprocess.Popen(["sh", "-c", "while :; do :; done"]) for _ in range(3)]
+    try:
+        digests = []
+        for i in range(3):
+            out = tmp_path / f"det{i}.mp4"
+            render(bp, paths, out, preset="preview")
+            digests.append(hashlib.sha256(out.read_bytes()).hexdigest())
+    finally:
+        for p in load:
+            p.kill()
+            p.wait()
+
+    assert len(set(digests)) == 1, (
+        "identical inputs produced different bytes under load: "
+        + ", ".join(d[:12] for d in digests)
+    )
 
 
 def test_platform_attach_emits_a_silent_master(bound, tmp_path):

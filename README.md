@@ -126,10 +126,23 @@ reelsedits build   reference.mp4 my-clips/ -o out.mp4       # the whole thing
 | | |
 |---|---|
 | **Working** | Web UI · REST API · background jobs with live progress · SQLite/Postgres persistence · blueprint caching (~19× faster on a repeat reference) · coverage report with an actionable shoot list · clip swapping with preference logging · deterministic rendering · quota enforcement |
-| **v0 baseline** | The analysis *models*. librosa stands in for Demucs + a transformer beat tracker; histogram differencing for the TransNetV2 + AutoShot ensemble; Farneback flow for SEA-RAFT. No VLM yet, so `subject_class` is unset and semantic matching is inactive — matching runs on scale, motion and quality alone. |
+| **v0 baseline** | The analysis *models*. librosa stands in for Demucs + a transformer beat tracker; histogram differencing for the TransNetV2 + AutoShot ensemble; Farneback flow for SEA-RAFT. Semantic labelling is pluggable but ships with no weights, so `subject_class` is unset out of the box (see below). |
 | **Not built** | Accounts and login (single local org), S3 and multi-node deployment (interfaces exist, local disk is wired), the marketplace, the licensed-music catalogue. |
 
 Because the blueprint schema is frozen, swapping the real models in changes function bodies rather than contracts. [docs/07](docs/07-model-recommendations.md) specifies each replacement; [docs/20](docs/20-implementation-plan.md) has the order.
+
+### Turning on cross-domain matching
+
+The product's central claim is that a car reference can render onto motorcycle footage, because both a wheel and an exhaust are *low-angle mechanical detail*. That works through subject labels — and without a semantic model every subject is `any`, so the bridge never fires and matching runs on shot scale, camera motion and quality alone.
+
+```bash
+pip install -e "services/analyzer[vlm]"
+export REELSEDITS_VLM_MODEL=Qwen/Qwen2.5-VL-3B-Instruct   # or [clip], cheaper
+```
+
+`GET /readyz` reports which backend is live and whether cross-domain matching is active, so this is never a silent difference. Backends are selected automatically and only claim availability when weights are already cached — downloading several GB during a user's first analysis would present as a hang.
+
+What works with no weights at all: camera height (measured from horizon position — geometry, not semantics) and a perceptual shot descriptor for the matcher's similarity tiebreak.
 
 ## Three honest caveats
 

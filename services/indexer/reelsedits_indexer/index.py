@@ -47,6 +47,7 @@ MIN_SEGMENT_MS = 500
 
 @dataclass(slots=True)
 class ClipIndex:
+    semantic_backend: str
     asset_id: str
     path: Path
     duration_ms: int
@@ -71,19 +72,28 @@ def _quality(shot: Shot, sharpness_ref: float) -> float:
     return round(float(np.clip(0.45 * sharp + 0.30 * exposure + 0.25 * stability, 0, 1)), 3)
 
 
-def _camera_height(shot: Shot) -> CameraHeight:
-    """Crude height proxy from horizon position.
+def _to_enum(cls, value, default):
+    try:
+        return cls(value)
+    except (ValueError, TypeError):
+        return default
 
-    Not measured properly in v0 — a real estimate needs the horizon detection in
-    docs/08 §8. Returning ANY rather than guessing keeps this from becoming a
-    wrong hard constraint in the matcher.
+
+def index_clip(path: Path, asset_id: str | None = None,
+               semantic_backend=None) -> ClipIndex:
+    """Analyse one user clip into usable Segments.
+
+    Takes the SAME semantic backend as the reference analyser. That is not a
+    convenience — if the two disagree about what a "mechanical_detail" is, the
+    structural constraints stop working and matching silently degrades to
+    embedding similarity, which is the wrong objective (docs/09 §1.1).
     """
-    return CameraHeight.ANY
+    from reelsedits_analyzer.embedding import perceptual_embedding
+    from reelsedits_analyzer.semantic import get_backend
 
-
-def index_clip(path: Path, asset_id: str | None = None) -> ClipIndex:
-    """Analyse one user clip into usable Segments."""
     asset_id = asset_id or f"ast_{path.stem}"
+    backend = semantic_backend if semantic_backend is not None else get_backend()
+
     profile = probe(path)
     frames = read_proxy_frames(path, profile)
     spans, _conf = detect_shots(frames)
@@ -96,6 +106,7 @@ def index_clip(path: Path, asset_id: str | None = None) -> ClipIndex:
             continue
         motion, energy, direction, shake = analyse_motion(block)
         look = analyse_appearance(block)
+        sem = backend.label(block, {"motion_energy": energy})
         raw_shots.append(Shot(
             index=len(raw_shots),
             t_in_ms=int(a / PROXY_FPS * 1000),
@@ -110,6 +121,11 @@ def index_clip(path: Path, asset_id: str | None = None) -> ClipIndex:
             subject_area_ratio=look["subject_area_ratio"],
             shot_scale=classify_scale(look["subject_area_ratio"]),
             composition=classify_composition(block),
+            camera_height=sem.camera_height.value,
+            subject_class=sem.trusted_subject.value,
+            subject_confidence=sem.subject_confidence,
+            has_face=sem.has_face,
+            embedding=perceptual_embedding(block, energy, direction),
         ))
 
     if not raw_shots:
@@ -141,13 +157,15 @@ def index_clip(path: Path, asset_id: str | None = None) -> ClipIndex:
             usable_out_ms=usable_out,
             shot_scale=ShotScale(shot.shot_scale),
             camera_motion=_to_motion(shot.camera_motion),
-            subject_class=SubjectClass.ANY,      # no VLM in v0
-            camera_height=_camera_height(shot),
+            subject_class=_to_enum(SubjectClass, shot.subject_class, SubjectClass.ANY),
+            camera_height=_to_enum(CameraHeight, shot.camera_height, CameraHeight.ANY),
             composition=_to_composition(shot.composition),
             motion_energy=shot.motion_energy,
             motion_direction_deg=shot.motion_direction_deg,
             quality=q,
             mean_luma=shot.mean_luma,
+            has_face=shot.has_face,
+            semantic_vec=list(shot.embedding),
             # Distinct per sub-shot so the 30-degree rule in the sequence
             # objective can tell them apart within one source file.
             camera_angle_deg=float(hash((asset_id, len(segments))) % 360),
@@ -160,6 +178,7 @@ def index_clip(path: Path, asset_id: str | None = None) -> ClipIndex:
         notes.append(f"{path.name}: split into {len(segments)} sub-shots")
 
     return ClipIndex(
+        semantic_backend=backend.name,
         asset_id=asset_id,
         path=path,
         duration_ms=profile.duration_ms,

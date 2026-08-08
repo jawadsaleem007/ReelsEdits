@@ -22,6 +22,31 @@ This is not a nice-to-have. It is the precondition for:
 
 Where variation is genuinely wanted — grain, particles, shake — it comes from a **seeded PRNG whose seed is a function of `(blueprint.id, slot.index, effect_index)`**. Deterministic, and still visually varied across the timeline.
 
+### 1.1 Thread counts are part of the contract
+
+Found the hard way, and worth stating because it is not obvious: **ffmpeg threads the filter graph and the encoder independently, and both default to the host CPU count.**
+
+Unpinned, this produced:
+
+- different bytes from identical inputs on the *same* machine under CPU contention, and
+- different bytes between machines with different core counts.
+
+Either would silently corrupt the render cache in a multi-node deployment — where "busy" and "heterogeneous" are the normal state — serving a user a file that is not the one they previewed. There is no error; the cache key matches and the bytes differ.
+
+Three settings are therefore mandatory, and all three are part of `RENDERER_VERSION`:
+
+| Setting | What it fixes |
+|---|---|
+| `-x264-params deterministic=1` | Thread *scheduling*: interleaving perturbs lookahead decisions |
+| `-threads N` (fixed) | Encoder thread *count* |
+| `-filter_complex_threads N` / `-filter_threads N` (fixed) | Filter-graph thread count — separate from the encoder, and the one most easily missed |
+
+Pinned to a **fixed count rather than to 1**: determinism requires the count to be *constant*, not to be one. Serialising the filter graph roughly doubled preview render time on a 2-core box, and render seconds are the dominant term in COGS ([docs/14 §2.5](14-cost-model.md)) — paying double for a guarantee a constant already buys would be a bad trade.
+
+Changing any of the three changes the encoded bytes, so each requires a `RENDERER_VERSION` bump; otherwise renders cached under the old value would be served alongside new ones.
+
+CI asserts determinism on an idle machine, which passes trivially. [`tools/stress_determinism.py`](../tools/stress_determinism.py) asserts it under deliberate CPU contention and is run before a renderer release.
+
 The renderer also **asserts its source manifest** before writing a frame: every input asset must be either a user upload or a licensed catalogue item. There is no code path by which reference media can reach the output, and the assertion makes that testable rather than merely intended.
 
 ---

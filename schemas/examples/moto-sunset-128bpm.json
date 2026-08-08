@@ -19,6 +19,7 @@
     "planner_seed": 42,
     "source_fingerprint": "a91f3c7e2b8d4a16c05e9f731d2b8a4c",
     "source_duration_ms": 45000,
+    "semantic_backend": "none",
     "notes": [
       "Reference bitrate low (1.8 Mbps); grade estimate is approximate.",
       "Speed ramps at slots 13, 17, 21 inferred from motion-blur ratio; medium confidence.",

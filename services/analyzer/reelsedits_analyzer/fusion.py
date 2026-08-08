@@ -201,27 +201,55 @@ def shot_to_requirements(shot: Shot, index: int, total: int) -> SlotRequirements
     scale = ShotScale(shot.shot_scale)
     motion = _MOTION_TO_ENUM.get(shot.camera_motion, CameraMotion.ANY)
 
+    # Subject class comes from the semantic backend, already gated on
+    # confidence (see SemanticResult.trusted_subject). When it is a real class
+    # rather than ANY, the SUBJECT_BRIDGES table in the matcher activates and
+    # cross-domain transfer becomes possible: a car wheel and a motorcycle
+    # exhaust are both mechanical_detail, so a car-derived slot can be filled
+    # by motorcycle footage. That is the mechanism the product rests on
+    # (docs/09 §1.1), and it is inert while everything is ANY.
+    subject = _to_enum(SubjectClass, shot.subject_class, SubjectClass.ANY)
+    subject_classes = [subject] if subject is not SubjectClass.ANY else [SubjectClass.ANY]
+
+    # The analyser measures narrative role structurally; a VLM that supplied one
+    # knows more, so prefer it.
+    role = _to_enum(NarrativeRole, shot.narrative_role, NarrativeRole.ANY)
+    if role is NarrativeRole.ANY:
+        role = _narrative_role(index, total, scale, shot.motion_energy)
+
+    hint = (
+        f"{scale.value.replace('_', ' ')} shot, {shot.camera_motion.replace('_', ' ')} "
+        f"camera, motion energy {shot.motion_energy:.2f}, "
+        f"{shot.composition.replace('_', ' ')} composition"
+    )
+    if shot.description:
+        hint = f"{shot.description} ({hint})"
+
     return SlotRequirements(
         shot_scale=scale,
         shot_scale_tolerance=1,
         camera_motion=_compatible_motions(motion),
-        camera_height=CameraHeight.ANY,
-        # Subject class stays ANY in v0: without a VLM we have no honest way to
-        # name the subject, and a wrong hard constraint is worse than an absent
-        # one. The semantic stage fills this in.
-        subject_class=[SubjectClass.ANY],
-        narrative_role=_narrative_role(index, total, scale, shot.motion_energy),
+        camera_height=_to_enum(CameraHeight, shot.camera_height, CameraHeight.ANY),
+        subject_class=subject_classes,
+        narrative_role=role,
         composition=_COMPOSITION_TO_ENUM.get(shot.composition, Composition.ANY),
         motion_energy=shot.motion_energy,
         motion_energy_tolerance=0.30,
         motion_direction_deg=shot.motion_direction_deg,
         min_quality=0.45,
-        semantic_hint=(
-            f"{scale.value.replace('_', ' ')} shot, {shot.camera_motion.replace('_', ' ')} "
-            f"camera, motion energy {shot.motion_energy:.2f}, "
-            f"{shot.composition.replace('_', ' ')} composition"
-        ),
+        requires_face=False,
+        # Feeds the matcher's soft tiebreak (weight 0.08). Deliberately soft:
+        # ranking by appearance similarity would fight cross-domain transfer.
+        semantic_vec=list(shot.embedding) or None,
+        semantic_hint=hint,
     )
+
+
+def _to_enum(cls, value, default):
+    try:
+        return cls(value)
+    except (ValueError, TypeError):
+        return default
 
 
 # ---------------------------------------------------------------------------
@@ -404,7 +432,10 @@ def build_blueprint(
     notes = [*audio.notes, *visual.notes]
     if audio.confidence < 0.6:
         notes.append("Beat grid confidence is low; prefer content-driven cuts.")
-    notes.append("v0 analyser: histogram SBD and Farneback flow; no VLM or semantic labels.")
+    notes.append(
+        f"v0 analyser: histogram SBD and Farneback flow; semantic backend "
+        f"'{visual.semantic_backend}'."
+    )
 
     return Blueprint(
         id=f"bp_{uuid.uuid4().hex[:16]}",
@@ -416,6 +447,7 @@ def build_blueprint(
             planner_model=None,
             planner_tier="none",
             source_duration_ms=duration_ms,
+            semantic_backend=visual.semantic_backend,
             confidence=ConfidenceBreakdown(
                 overall=round(float(np.mean([audio.confidence, visual.sbd_confidence, 0.55])), 3),
                 beat_grid=audio.confidence,

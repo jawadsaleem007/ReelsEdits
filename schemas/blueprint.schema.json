@@ -234,6 +234,11 @@
             "type": "string"
           },
           "default": []
+        },
+        "semantic_backend": {
+          "type": "string",
+          "default": "none",
+          "description": "Which semantic backend produced the shot labels (vlm, clip, heuristic, none). A blueprint built with heuristics and one built with a VLM are not comparable, and the analysis cache must not serve one where the other was expected."
         }
       }
     },

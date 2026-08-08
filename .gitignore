@@ -79,3 +79,6 @@ kubeconfig
 .DS_Store
 Thumbs.db
 desktop.ini
+
+# scratch from a debugging session; mount does not permit deletion
+services/analyzer/tests/test_probe_determinism.py

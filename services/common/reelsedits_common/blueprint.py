@@ -111,6 +111,12 @@ class Provenance(_Base):
         description="Perceptual hash of the reference. Not a copy of it, and not reversible.",
     )
     source_duration_ms: Ms = 0
+    semantic_backend: str = Field(
+        default="none",
+        description="Which semantic backend produced the shot labels. A blueprint "
+        "built with heuristics and one built with a VLM are not comparable, and "
+        "the analysis cache must not serve one where the other was expected.",
+    )
     notes: list[str] = Field(default_factory=list)
 
 

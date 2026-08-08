@@ -155,6 +155,7 @@ class JobRunner:
         """Reference video → Editing Blueprint, with cache lookup first."""
         from reelsedits_analyzer.audio import analyze_audio
         from reelsedits_analyzer.fusion import ANALYZER_VERSION, build_blueprint
+        from reelsedits_analyzer.semantic import get_backend as get_semantic_backend
         from reelsedits_analyzer.visual import analyze_visual
         from reelsedits_common.enums import MusicStrategy
 
@@ -165,12 +166,18 @@ class JobRunner:
         path = storage.local_path(asset.storage_key)
 
         self._progress(db, job, "fingerprint", 0.05, "Checking whether we've seen this before")
-        fp = fingerprint_video(path, ANALYZER_VERSION)
+        # The semantic backend is part of the cache identity. A blueprint whose
+        # subject classes are all "any" (heuristics) must not be served to a
+        # deployment running a VLM -- it would silently disable cross-domain
+        # matching with no error anywhere.
+        backend = get_semantic_backend()
+        cache_version = f"{ANALYZER_VERSION}+{backend.name}"
+        fp = fingerprint_video(path, cache_version)
 
         cached = (
             db.query(Reference)
             .filter(Reference.fingerprint == fp,
-                    Reference.analyzer_version == ANALYZER_VERSION,
+                    Reference.analyzer_version == cache_version,
                     Reference.blueprint_id.isnot(None))
             .first()
         )
@@ -193,7 +200,7 @@ class JobRunner:
                     "cache_hit": True}
 
         self._progress(db, job, "probing", 0.10, "Reading the video")
-        visual = analyze_visual(path)
+        visual = analyze_visual(path, semantic_backend=backend)
 
         self._progress(db, job, "structure", 0.30,
                        f"Found {len(visual.shots)} shots — measuring camera motion")
@@ -238,7 +245,7 @@ class JobRunner:
         db.flush()
 
         ref = Reference(org_id=job.org_id, asset_id=asset.id, fingerprint=fp,
-                        analyzer_version=ANALYZER_VERSION, blueprint_id=row.id,
+                        analyzer_version=cache_version, blueprint_id=row.id,
                         source_url=job.input.get("source_url"))
         db.add(ref)
 
@@ -252,6 +259,7 @@ class JobRunner:
 
     def _index(self, db, job: Job) -> dict[str, Any]:
         """User clips → Segments the matcher can work with."""
+        from reelsedits_analyzer.semantic import get_backend as get_semantic_backend
         from reelsedits_indexer.index import index_clip
 
         storage = get_storage()
@@ -267,7 +275,8 @@ class JobRunner:
                            f"Analysing {asset.filename} ({i + 1} of {total})")
             try:
                 path = storage.local_path(asset.storage_key)
-                result = index_clip(path, asset_id=asset.id)
+                result = index_clip(path, asset_id=asset.id,
+                                    semantic_backend=get_semantic_backend())
 
                 asset.width, asset.height = result.width, result.height
                 asset.fps, asset.duration_ms = result.fps, result.duration_ms
@@ -289,6 +298,7 @@ class JobRunner:
                         quality=s.quality, mean_luma=s.mean_luma,
                         camera_angle_deg=s.camera_angle_deg,
                         has_face=s.has_face, has_speech=s.has_speech,
+                        semantic_vec=s.semantic_vec or None,
                     ))
                 indexed += 1
                 db.commit()

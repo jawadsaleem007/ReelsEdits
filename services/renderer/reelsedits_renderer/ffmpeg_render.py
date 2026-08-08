@@ -22,7 +22,24 @@ from reelsedits_common.enums import MusicStrategy, TransitionType
 
 log = logging.getLogger("reelsedits.renderer")
 
-RENDERER_VERSION = "0.2.0"
+RENDERER_VERSION = "0.3.0"
+
+#: Pinned so output is byte-identical across machines, not just across runs on
+#: one machine. Changing this changes the encoded bytes, so it is part of the
+#: determinism contract and requires a RENDERER_VERSION bump — otherwise cached
+#: renders from the old value would be served alongside new ones.
+X264_THREADS = 4
+
+#: Filter-graph threads. ffmpeg threads filters independently of the encoder and
+#: both default to the CPU count, so an unpinned graph produces different bytes
+#: on a 4-core machine than on a 16-core one.
+#:
+#: Pinned to a FIXED count rather than to 1: determinism needs the count to be
+#: constant, not to be one. Serialising the graph made a 15s preview roughly
+#: twice as slow on a 2-core box, and render seconds are the dominant term in
+#: COGS (docs/14 §2.5) — paying double for a guarantee a constant already buys
+#: would be a bad trade.
+FILTER_THREADS = 4
 
 PRESETS: dict[str, dict] = {
     "preview": {"w": 540, "h": 960, "crf": 26, "preset": "veryfast", "grain": False},
@@ -257,7 +274,15 @@ def render(
     audio_src, _user_track, audio_notes = _audio_plan(bp, len(sources))
     compromises.extend(audio_notes)
 
-    cmd: list[str] = ["ffmpeg", "-y", "-loglevel", "error"]
+    cmd: list[str] = [
+        "ffmpeg", "-y", "-loglevel", "error",
+        # Filter-graph threading is separate from encoder threading and defaults
+        # to the CPU count. Pinning it is required for byte-identical output:
+        # without it, renders diverged under CPU contention even with the
+        # encoder fully pinned. These must come before the inputs.
+        "-filter_complex_threads", str(FILTER_THREADS),
+        "-filter_threads", str(FILTER_THREADS),
+    ]
     for src in sources:
         cmd += ["-i", str(src["path"])]
     if audio_src:
@@ -274,16 +299,21 @@ def render(
         "-profile:v", "high",
         "-c:a", "aac", "-b:a", "128k", "-ar", "48000",
         # --- determinism (docs/10 §1) -------------------------------------
-        # Multithreaded libx264 does NOT produce bit-identical output across
-        # runs by default: thread scheduling perturbs lookahead decisions, and
-        # two renders of identical input differ. This silently breaks render
+        # Two flags, and BOTH are required. Removing either breaks render
         # caching, the marketplace guarantee that a purchased blueprint
         # reproduces its preview, and reproducible debugging.
         #
-        # x264's `deterministic` flag exists for exactly this. It keeps
-        # threading (measured FASTER than -threads 1) while guaranteeing
-        # reproducible output. Do not remove without a passing determinism test.
+        # 1. `deterministic=1` makes x264 independent of thread *scheduling*.
+        #    Without it, two renders of identical input on one machine differ,
+        #    because thread interleaving perturbs lookahead decisions.
+        #
+        # 2. `-threads` pinned makes it independent of thread *count*, which
+        #    deterministic=1 does NOT cover. ffmpeg otherwise picks a count from
+        #    detected CPUs, so output changed under load on one machine and
+        #    differed between machines with different core counts — which would
+        #    have silently broken the render cache in any multi-node deployment.
         "-x264-params", "deterministic=1",
+        "-threads", str(X264_THREADS),
         # Strip wall-clock metadata, which would otherwise differ per render.
         "-fflags", "+bitexact", "-flags", "+bitexact",
         "-map_metadata", "-1",

@@ -167,11 +167,23 @@ async def healthz() -> dict[str, str]:
 async def readyz(db: DbDep, settings: SettingsDep) -> dict[str, Any]:
     db.query(Org).count()
     from reelsedits_analyzer.fusion import ANALYZER_VERSION
+    from reelsedits_analyzer.semantic import get_backend
     from reelsedits_renderer.ffmpeg_render import RENDERER_VERSION
 
-    return {"status": "ok",
-            "versions": {"analyzer": ANALYZER_VERSION, "renderer": RENDERER_VERSION,
-                         "matcher": settings.matcher_version}}
+    backend = get_backend()
+    return {
+        "status": "ok",
+        "versions": {"analyzer": ANALYZER_VERSION, "renderer": RENDERER_VERSION,
+                     "matcher": settings.matcher_version},
+        "semantic": {
+            "backend": backend.name,
+            # Without a trustworthy backend every subject_class is ANY, the
+            # SUBJECT_BRIDGES table never fires, and matching runs on shot
+            # scale, motion and quality alone. Say so plainly rather than
+            # leaving users to wonder why a good clip was ignored.
+            "cross_domain_matching": backend.produces_trustworthy_subjects,
+        },
+    }
 
 
 # ===========================================================================
@@ -353,6 +365,8 @@ async def style_card(blueprint_id: str, db: DbDep, principal: PrincipalDep) -> d
                      for s in bp.audio.sections],
         "confidence": conf,
         "low_confidence_subsystems": bp.low_confidence_subsystems(),
+        "semantic_backend": bp.provenance.semantic_backend,
+        "notes": bp.provenance.notes,
         "music": (bp.audio.music_binding.model_dump(mode="json", exclude_none=True)
                   if bp.audio.music_binding else None),
     }

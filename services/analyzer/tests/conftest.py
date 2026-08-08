@@ -153,3 +153,33 @@ def media(tmp_path_factory) -> dict:
         "drop_at_ms": int(DROP_AT_S * 1000),
         "n_clips": len(CLIP_RECIPE),
     }
+
+
+# ---------------------------------------------------------------------------
+# cached analyses
+# ---------------------------------------------------------------------------
+#
+# Analysis is expensive. Without session-scoped caching the suite re-decodes and
+# re-analyses the same reference in a dozen tests and takes minutes, at which
+# point people stop running it.
+
+
+@pytest.fixture(scope="session")
+def audio_analysis(media):
+    from reelsedits_analyzer.audio import analyze_audio
+
+    return analyze_audio(media["reference"])
+
+
+@pytest.fixture(scope="session")
+def visual_analysis(media):
+    from reelsedits_analyzer.visual import analyze_visual
+
+    return analyze_visual(media["reference"])
+
+
+@pytest.fixture(scope="session")
+def indexed_clips(media):
+    from reelsedits_indexer.index import index_directory
+
+    return index_directory(media["clips_dir"])

@@ -19,8 +19,16 @@ dependencies = [
 
 [project.optional-dependencies]
 dev = ["pytest>=8.0", "jsonschema>=4.22", "ruff>=0.5"]
-# The production stack. Not required to run the v0 pipeline.
-gpu = ["torch>=2.3", "demucs>=4.0", "transformers>=4.40"]
+
+# Semantic labelling. Without these, subject_class stays "any" and cross-domain
+# matching is inactive -- the pipeline still runs, on structure alone.
+#   pip install -e services/analyzer[vlm]     then set REELSEDITS_VLM_MODEL
+#   pip install -e services/analyzer[clip]    cheaper, weaker
+vlm = ["torch>=2.3", "transformers>=4.45", "accelerate>=0.30", "pillow>=10.0"]
+clip = ["torch>=2.3", "transformers>=4.40", "pillow>=10.0"]
+
+# The rest of the production stack (docs/07).
+gpu = ["torch>=2.3", "demucs>=4.0", "transformers>=4.45"]
 
 [tool.hatch.build.targets.wheel]
 packages = ["reelsedits_analyzer"]

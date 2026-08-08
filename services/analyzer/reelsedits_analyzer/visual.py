@@ -81,6 +81,17 @@ class Shot:
     shot_scale: str = "medium"
     composition: str = "centered"
 
+    # Populated by the semantic backend. camera_height is measured from the
+    # horizon and is real even with no model; subject_class stays "any" unless
+    # a backend we trust supplied it (docs/07 §2).
+    camera_height: str = "any"
+    subject_class: str = "any"
+    subject_confidence: float = 0.0
+    narrative_role: str = "any"
+    description: str | None = None
+    has_face: bool = False
+    embedding: list = field(default_factory=list)
+
     @property
     def duration_ms(self) -> int:
         return self.t_out_ms - self.t_in_ms
@@ -93,6 +104,10 @@ class VisualAnalysis:
     sbd_confidence: float
     grade: dict = field(default_factory=dict)
     notes: list[str] = field(default_factory=list)
+    #: Which semantic backend produced the labels. Recorded because a blueprint
+    #: built with heuristics and one built with a VLM are not comparable, and
+    #: the cache key must distinguish them.
+    semantic_backend: str = "none"
 
 
 # ---------------------------------------------------------------------------
@@ -440,10 +455,15 @@ def classify_composition(frames: np.ndarray) -> str:
 # ---------------------------------------------------------------------------
 
 
-def analyze_visual(path: Path) -> VisualAnalysis:
+def analyze_visual(path: Path, semantic_backend=None) -> VisualAnalysis:
+    from .embedding import perceptual_embedding
+    from .semantic import get_backend
+
     profile = probe(path)
     frames = read_proxy_frames(path, profile)
     spans, sbd_conf = detect_shots(frames)
+
+    backend = semantic_backend if semantic_backend is not None else get_backend()
 
     shots: list[Shot] = []
     for a, b, ttype, tframes in spans:
@@ -452,6 +472,8 @@ def analyze_visual(path: Path) -> VisualAnalysis:
             continue
         motion, energy, direction, shake = analyse_motion(block)
         look = analyse_appearance(block)
+        sem = backend.label(block, {"motion_energy": energy,
+                                    "shot_scale": classify_scale(look["subject_area_ratio"])})
 
         shots.append(Shot(
             index=len(shots),
@@ -473,6 +495,15 @@ def analyze_visual(path: Path) -> VisualAnalysis:
             subject_area_ratio=look["subject_area_ratio"],
             shot_scale=classify_scale(look["subject_area_ratio"]),
             composition=classify_composition(block),
+            camera_height=sem.camera_height.value,
+            # trusted_subject, not subject_class: a low-confidence label must
+            # not become a hard matcher constraint that excludes good footage.
+            subject_class=sem.trusted_subject.value,
+            subject_confidence=sem.subject_confidence,
+            narrative_role=sem.narrative_role.value,
+            description=sem.description,
+            has_face=sem.has_face,
+            embedding=perceptual_embedding(block, energy, direction),
         ))
 
     grade = _global_grade(frames)
@@ -480,8 +511,15 @@ def analyze_visual(path: Path) -> VisualAnalysis:
     if sbd_conf < 0.5:
         notes.append("Shot boundaries have low separation; cut list may be approximate.")
 
+    if backend.name == "heuristic":
+        notes.append(
+            "No semantic model available: subject classes are unset, so "
+            "cross-domain matching is inactive and matching runs on shot scale, "
+            "camera motion and quality alone."
+        )
+
     return VisualAnalysis(profile=profile, shots=shots, sbd_confidence=sbd_conf,
-                          grade=grade, notes=notes)
+                          grade=grade, notes=notes, semantic_backend=backend.name)
 
 
 def _global_grade(frames: np.ndarray) -> dict:
