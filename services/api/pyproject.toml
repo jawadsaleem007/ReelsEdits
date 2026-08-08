@@ -11,6 +11,10 @@ license = { text = "MIT" }
 dependencies = [
     "fastapi>=0.115",
     "uvicorn[standard]>=0.30",
+    # Required by FastAPI for multipart form uploads. Not a transitive
+    # dependency of fastapi -- without it every file upload raises at import
+    # time, which is the app's very first user action.
+    "python-multipart>=0.0.9",
     "pydantic>=2.7,<3",
     "pydantic-settings>=2.3",
     "sqlalchemy[asyncio]>=2.0",

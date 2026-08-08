@@ -6,7 +6,6 @@ build-backend = "hatchling.build"
 name = "reelsedits-common"
 version = "0.1.0"
 description = "Editing Blueprint (EBP) models and shared vocabulary for ReelsEdits"
-readme = "README.md"
 requires-python = ">=3.10"
 license = { text = "MIT" }
 authors = [{ name = "Jawad Saleem" }]
