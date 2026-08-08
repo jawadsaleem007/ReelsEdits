@@ -418,6 +418,62 @@ def test_platform_attach_emits_a_silent_master(bound, tmp_path):
         assert db < -60, f"expected a silent master, measured {db} dB"
 
 
+def test_render_handles_every_transition_type(bound, tmp_path):
+    """Regression: xfade was never exercised.
+
+    Two bugs hid behind this gap, both fatal on a user's first real render and
+    both invisible to the existing suite, because the synthetic fixture
+    reference produces only hard cuts:
+
+    1. Timebase mismatch. `fps` gives a fresh branch 1/fps while a branch that
+       has been through concat/xfade carries 1/1000000, and xfade refuses to
+       configure when its two inputs disagree.
+    2. Invented xfade names. `zoomin` does not exist in ffmpeg 4.4, and an
+       unsupported name kills the whole render with a parse error instead of
+       degrading.
+
+    So: assert that EVERY transition type either renders natively or degrades to
+    a hard cut. Never a hard failure.
+    """
+    from reelsedits_common import Transition
+    from reelsedits_common.enums import TransitionType
+
+    bp, paths, _ = bound
+    bp = bp.model_copy(deep=True)
+
+    for kind in TransitionType:
+        if kind is TransitionType.HARD_CUT or kind is TransitionType.CUSTOM:
+            continue
+        bp.transitions = [Transition(
+            at_cut=1, type=kind, duration_ms=240, confidence=0.9,
+            direction_deg=0.0 if kind.needs_direction else None,
+        )]
+        out = tmp_path / f"tr-{kind.value}.mp4"
+        try:
+            render(bp, paths, out, preset="preview")
+        except RenderError as exc:
+            pytest.fail(f"transition {kind.value} failed to render: {exc}")
+        assert out.stat().st_size > 5_000, f"{kind.value} produced an empty file"
+        out.unlink()
+
+
+def test_xfade_names_are_validated_against_ffmpeg():
+    """Never emit an xfade name the installed ffmpeg does not know.
+
+    The name set grows between ffmpeg releases, so a hardcoded table works on
+    the machine it was written on and fails elsewhere.
+    """
+    from reelsedits_renderer.ffmpeg_render import XFADE, resolve_xfade, supported_xfades
+
+    available = supported_xfades()
+    assert "fade" in available, "probe returned an implausible set"
+
+    for kind in XFADE:
+        name = resolve_xfade(kind)
+        if name is not None:
+            assert name in available, f"{kind.value} resolved to unsupported {name!r}"
+
+
 def test_render_refuses_unbound_blueprint(blueprint, tmp_path):
     with pytest.raises(RenderError, match="no bound slots"):
         render(blueprint, {}, tmp_path / "x.mp4", preset="preview")

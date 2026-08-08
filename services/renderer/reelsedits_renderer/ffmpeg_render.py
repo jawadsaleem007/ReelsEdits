@@ -47,17 +47,83 @@ PRESETS: dict[str, dict] = {
     "4k": {"w": 2160, "h": 3840, "crf": 18, "preset": "slow", "grain": True},
 }
 
-#: FFmpeg xfade names for the transitions we can express natively. Anything not
-#: here degrades to a hard cut and is recorded as a compromise -- rendering a
-#: whip pan as an undirected smear reads as a bug, so we would rather not.
-XFADE = {
-    TransitionType.CROSS_DISSOLVE: "fade",
-    TransitionType.FADE_BLACK: "fadeblack",
-    TransitionType.FADE_WHITE: "fadewhite",
-    TransitionType.SLIDE: "slideleft",
-    TransitionType.PUSH: "slideright",
-    TransitionType.ZOOM_IN: "zoomin",
+#: Blueprint transition -> ffmpeg xfade name, best first.
+#:
+#: A list per type because xfade's vocabulary varies by ffmpeg version: `zoomin`
+#: exists in 5+ but not 4.4, and picking an unsupported name fails the whole
+#: render with "Undefined constant or missing '('". We take the first name the
+#: installed ffmpeg actually supports (see `supported_xfades`).
+#:
+#: Anything with no usable mapping degrades to a hard cut and records a
+#: compromise -- rendering a whip pan as an undirected smear reads as a bug, so
+#: we would rather not attempt it.
+XFADE: dict[TransitionType, list[str]] = {
+    TransitionType.CROSS_DISSOLVE: ["fade", "dissolve"],
+    TransitionType.FADE_BLACK: ["fadeblack"],
+    TransitionType.FADE_WHITE: ["fadewhite"],
+    # A flash IS a brief blow-out to white, so fadewhite is a genuine
+    # approximation rather than a stand-in. Flashes are common in real edits,
+    # so having no mapping here lost a lot.
+    TransitionType.FLASH: ["fadewhite"],
+    TransitionType.SLIDE: ["slideleft"],
+    TransitionType.PUSH: ["slideright"],
+    TransitionType.ZOOM_IN: ["zoomin", "circleopen"],
+    TransitionType.ZOOM_OUT: ["zoomin", "circleclose"],
+    TransitionType.BLUR: ["hblur", "fade"],
+    TransitionType.GLITCH: ["pixelize", "fade"],
+    TransitionType.LUMA_WIPE: ["wipeleft"],
+    TransitionType.MASK_WIPE: ["circlecrop", "wipeleft"],
+    TransitionType.MORPH: ["smoothleft", "fade"],
 }
+
+_xfade_cache: frozenset[str] | None = None
+
+
+def supported_xfades() -> frozenset[str]:
+    """Names the installed ffmpeg accepts for xfade's `transition` option.
+
+    Probed once and cached. Hardcoding a table was wrong: the enum grows between
+    ffmpeg releases, and a name from a newer build kills the render on an older
+    one with an unhelpful parse error rather than degrading.
+    """
+    global _xfade_cache
+    if _xfade_cache is not None:
+        return _xfade_cache
+
+    names: set[str] = set()
+    try:
+        out = subprocess.run(
+            ["ffmpeg", "-hide_banner", "-h", "filter=xfade"],
+            capture_output=True, text=True, timeout=15,
+        ).stdout
+        in_block = False
+        for line in out.splitlines():
+            if "set cross fade transition" in line:
+                in_block = True
+                continue
+            if in_block:
+                parts = line.split()
+                # Rows look like:  "     fade    0    ..FV.......  fade transition"
+                if len(parts) >= 2 and parts[1].lstrip("-").isdigit():
+                    names.add(parts[0])
+                elif line.strip() and not line.startswith(" " * 5):
+                    break
+    except (OSError, subprocess.SubprocessError):
+        log.warning("could not probe xfade transitions; assuming a minimal set")
+
+    # `fade` has existed since xfade was introduced; without it we would refuse
+    # every dissolve on a working ffmpeg.
+    _xfade_cache = frozenset(names or {"fade", "fadeblack", "fadewhite"})
+    return _xfade_cache
+
+
+def resolve_xfade(kind: TransitionType) -> str | None:
+    """First supported ffmpeg name for a blueprint transition, or None."""
+    available = supported_xfades()
+    for name in XFADE.get(kind, []):
+        if name in available:
+            return name
+    return None
 
 
 @dataclass(slots=True)
@@ -139,6 +205,18 @@ def build_filter_graph(
             f"scale={w}:{h}:force_original_aspect_ratio=increase:flags=bicubic",
             f"crop={w}:{h}",
             "setsar=1",
+            # Pin the timebase on EVERY branch.
+            #
+            # xfade refuses to configure if its two inputs disagree, and they do
+            # by default: `fps` gives a fresh branch 1/fps, while a branch that
+            # has already been through concat or xfade carries 1/1000000. The
+            # error is "First input link main timebase (1/1000000) do not match
+            # the corresponding second input link xfade timebase (1/30)".
+            #
+            # AVTB (1/1000000) rather than 1/fps, so it is also correct for
+            # fractional rates like 29.97 where 1/fps is not exactly
+            # representable.
+            "settb=AVTB",
         ]
         if grade:
             f.append(grade)
@@ -156,13 +234,14 @@ def build_filter_graph(
         tr = bp.transition_at(cut.index) if cut else None
         slot_ms = sources[i]["out_ms"] - sources[i]["in_ms"]
 
-        xfade_name = XFADE.get(tr.type) if tr else None
+        xfade_name = resolve_xfade(tr.type) if tr else None
         if tr and xfade_name is None:
             compromises.append({
                 "kind": "transition_substituted",
                 "slot": i,
                 "severity": "minor",
-                "detail": f"{tr.type.value} not expressible in the ffmpeg backend; used a hard cut.",
+                "detail": (f"{tr.type.value} is not available in this ffmpeg "
+                           f"build; used a hard cut."),
             })
 
         if xfade_name and tr:
@@ -176,11 +255,11 @@ def build_filter_graph(
             offset = (acc_ms / 1000.0) - d
             chains.append(
                 f"[{current}][v{i}]xfade=transition={xfade_name}"
-                f":duration={d:.4f}:offset={offset:.4f}[{out}]"
+                f":duration={d:.4f}:offset={offset:.4f},settb=AVTB[{out}]"
             )
             acc_ms = acc_ms + slot_ms - int(d * 1000)
         else:
-            chains.append(f"[{current}][v{i}]concat=n=2:v=1:a=0[{out}]")
+            chains.append(f"[{current}][v{i}]concat=n=2:v=1:a=0,settb=AVTB[{out}]")
             acc_ms += slot_ms
         current = out
 
