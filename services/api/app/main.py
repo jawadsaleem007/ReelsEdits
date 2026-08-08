@@ -17,6 +17,7 @@ from __future__ import annotations
 
 import json
 import logging
+import tempfile
 import time
 import uuid
 from contextlib import asynccontextmanager
@@ -215,7 +216,7 @@ async def upload_asset(
     db.flush()
 
     key = content_key(principal.org_id, asset.id, asset.filename)
-    tmp = Path("/tmp") / f"upload-{asset.id}{suffix}"
+    tmp = Path(tempfile.gettempdir()) / f"reelsedits-upload-{asset.id}{suffix}"
     written = 0
     try:
         with tmp.open("wb") as out:

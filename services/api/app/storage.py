@@ -16,6 +16,7 @@ from __future__ import annotations
 import contextlib
 import hashlib
 import shutil
+import tempfile
 from abc import ABC, abstractmethod
 from pathlib import Path
 from typing import BinaryIO
@@ -123,7 +124,9 @@ class S3Storage(Storage):
 
         self.bucket = bucket
         self.client = boto3.client("s3", region_name=region, endpoint_url=endpoint_url)
-        self.cache_dir = Path(cache_dir or "/tmp/reelsedits-cache")
+        self.cache_dir = Path(
+            cache_dir or Path(tempfile.gettempdir()) / "reelsedits-cache"
+        )
         self.cache_dir.mkdir(parents=True, exist_ok=True)
 
     def put(self, key: str, source: BinaryIO | Path) -> int:

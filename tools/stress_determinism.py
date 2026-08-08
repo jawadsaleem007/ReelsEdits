@@ -20,8 +20,10 @@ from __future__ import annotations
 
 import argparse
 import hashlib
+import os
 import subprocess
 import sys
+import tempfile
 import time
 from pathlib import Path
 
@@ -66,12 +68,14 @@ def main() -> int:
     print(f"{len(result.assignments)} slots bound; rendering {args.renders}x "
           f"under {args.load}x CPU load")
 
-    load = [subprocess.Popen(["sh", "-c", "while :; do :; done"])
-            for _ in range(args.load)]
+    # POSIX busy-loop; on Windows use a Python spinner so the tool is portable.
+    spin = ([sys.executable, "-c", "while True: pass"] if os.name == "nt"
+            else ["sh", "-c", "while :; do :; done"])
+    load = [subprocess.Popen(spin, stdout=subprocess.DEVNULL) for _ in range(args.load)]
     digests: list[str] = []
     try:
         for i in range(args.renders):
-            out = Path(f"/tmp/reelsedits-stress-{i}.mp4")
+            out = Path(tempfile.gettempdir()) / f"reelsedits-stress-{i}.mp4"
             t0 = time.time()
             render(bp, paths, out, preset=args.preset)
             digest = hashlib.sha256(out.read_bytes()).hexdigest()

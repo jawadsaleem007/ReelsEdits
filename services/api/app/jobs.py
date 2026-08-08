@@ -19,6 +19,7 @@ from __future__ import annotations
 
 import contextlib
 import logging
+import tempfile
 import threading
 import time
 from collections.abc import Callable
@@ -376,7 +377,7 @@ class JobRunner:
 
         render_id = __import__("uuid").uuid4().hex
         out_key = f"{project.org_id}/renders/{render_id}.mp4"
-        tmp = Path("/tmp") / f"reelsedits-{render_id}.mp4"
+        tmp = Path(tempfile.gettempdir()) / f"reelsedits-{render_id}.mp4"
 
         t0 = time.perf_counter()
         result = render(bp, paths, tmp, preset=preset)
