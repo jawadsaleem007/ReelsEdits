@@ -394,9 +394,18 @@ class JobRunner:
             duration_ms=result.duration_ms, bytes=result.bytes,
             render_cache_key=cache_key, renderer_version=RENDERER_VERSION,
             assignment=assignment,
-            degradation={"compromises": result.compromises,
-                         "degraded": bool(result.compromises),
-                         "coverage": match_result["coverage"]},
+            degradation={
+                # BOTH sources. Previously only the renderer's compromises were
+                # stored, so "a 7s shot was dropped" -- recorded by the matcher --
+                # never reached the user. That is precisely the silent
+                # degradation docs/06 §15 calls the worst output we can produce.
+                "compromises": (match_result.get("compromises") or []) + result.compromises,
+                "degraded": bool(match_result.get("compromises") or result.compromises),
+                "coverage": match_result["coverage"],
+                "reference_duration_ms": match_result.get("reference_duration_ms"),
+                "rendered_duration_ms": match_result.get("rendered_duration_ms"),
+                "dropped_slots": match_result.get("dropped_slots", 0),
+            },
             gpu_seconds=gpu_seconds,
         )
         db.add(row)
@@ -410,6 +419,8 @@ class JobRunner:
                 "url": storage.url_for(out_key),
                 "width": row.width, "height": row.height,
                 "duration_ms": row.duration_ms, "bytes": row.bytes,
+                "reference_duration_ms": match_result.get("reference_duration_ms"),
+                "dropped_slots": match_result.get("dropped_slots", 0),
                 "degradation": row.degradation}
 
 

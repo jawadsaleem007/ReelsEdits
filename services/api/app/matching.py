@@ -187,6 +187,7 @@ def bind_project(db, project: Project, force: bool = False) -> tuple[dict, list,
                 locked[slot["index"]] = a["segment_id"]
 
     result = match(bp, segments, locked=locked or None)
+    assignment_extra: list[dict[str, Any]] = []
 
     if result.coverage < COVERAGE_FLOOR and not force:
         raise ValueError(
@@ -201,35 +202,136 @@ def bind_project(db, project: Project, force: bool = False) -> tuple[dict, list,
             locked=a.slot_index in locked,
         )
 
-    # Drop unfilled slots so the renderer never sees a hole. The blueprint
-    # records this as degradation rather than silently shortening the edit.
+    # Unfilled slots: shorten before dropping.
+    #
+    # A slot is most often unfilled because it is LONGER than any available
+    # segment -- a reference whose opening shot runs 7s against phone clips cut
+    # into 2s pieces. Deleting it removed half the edit's runtime and the user
+    # got a 6s video from a 14s reference with no explanation.
+    #
+    # Shortening keeps the shot, keeps the edit's shape, and loses only the
+    # part we could not cover. The new length is snapped to the beat grid so
+    # every following cut stays on the beat -- an arbitrary length would push
+    # the whole remaining edit off-grid, which is worse than a shorter shot.
     if result.unfilled:
         from reelsedits_common import Compromise
         from reelsedits_common.enums import CompromiseKind
 
         bp.degradation.degraded = True
         bp.degradation.coverage = result.coverage
-        for idx in result.unfilled:
-            bp.degradation.compromises.append(Compromise(
-                kind=CompromiseKind.SLOT_DROPPED, slot=idx,
-                severity="moderate" if bp.slots[idx].importance > 0.6 else "minor",
-                detail="No candidate met this slot's requirements.",
-            ))
 
-    assignment = [
-        {"slot": a.slot_index, "segment_id": a.segment_id, "in_ms": a.in_ms,
-         "out_ms": a.out_ms, "score": a.score, "reason": a.reason,
-         "breakdown": a.breakdown}
-        for a in result.assignments
-    ]
+        still_unfilled: list[int] = []
+        for idx in result.unfilled:
+            slot = bp.slots[idx]
+            rescued = _rescue_by_shortening(bp, slot, segments)
+            if rescued is None:
+                still_unfilled.append(idx)
+                bp.degradation.compromises.append(Compromise(
+                    kind=CompromiseKind.SLOT_DROPPED, slot=idx,
+                    severity="major" if slot.importance > 0.8
+                    else "moderate" if slot.importance > 0.6 else "minor",
+                    detail=(f"Dropped a {slot.duration_ms / 1000:.1f}s shot: "
+                            f"{describe_gap(slot)}"),
+                ))
+            else:
+                new_ms, seg, in_ms, out_ms = rescued
+                original_ms = slot.duration_ms
+                slot.t_out_ms = slot.t_in_ms + new_ms
+                slot.assignment = Assignment(
+                    segment_id=seg.id, in_ms=in_ms, out_ms=out_ms,
+                    score=0.4, reason=(
+                        f"Shortened from {original_ms / 1000:.1f}s to "
+                        f"{new_ms / 1000:.1f}s — no clip was long enough"
+                    ),
+                )
+                bp.degradation.compromises.append(Compromise(
+                    kind=CompromiseKind.QUALITY_BELOW_THRESHOLD, slot=idx,
+                    severity="moderate",
+                    detail=(f"Shot {idx} shortened from {original_ms / 1000:.1f}s to "
+                            f"{new_ms / 1000:.1f}s: your longest usable clip for it "
+                            f"was {new_ms / 1000:.1f}s."),
+                ))
+                assignment_extra.append({
+                    "slot": idx, "segment_id": seg.id, "in_ms": in_ms,
+                    "out_ms": out_ms, "score": 0.4,
+                    "reason": slot.assignment.reason, "breakdown": {},
+                })
+        result.unfilled = still_unfilled
+
+    assignment = sorted(
+        [
+            {"slot": a.slot_index, "segment_id": a.segment_id, "in_ms": a.in_ms,
+             "out_ms": a.out_ms, "score": a.score, "reason": a.reason,
+             "breakdown": a.breakdown}
+            for a in result.assignments
+        ] + assignment_extra,
+        key=lambda a: a["slot"],
+    )
+
+    rendered_ms = sum(
+        bp.slots[a["slot"]].duration_ms for a in assignment
+    )
     summary = {
         "coverage": result.coverage,
         "confidence": result.overall_confidence,
         "solve_ms": result.solve_ms,
         "unfilled": result.unfilled,
         "violations": result.violations,
+        # Surfaced so the UI can say "6s from a 14s reference, because N cuts
+        # could not be filled" rather than leaving the user to notice.
+        "reference_duration_ms": bp.canvas.duration_ms,
+        "rendered_duration_ms": rendered_ms,
+        "dropped_slots": len(result.unfilled),
+        "compromises": [
+            c.model_dump(mode="json") for c in bp.degradation.compromises
+        ],
     }
     return bp.model_dump(mode="json", by_alias=True, exclude_none=True), assignment, summary
+
+
+#: A shot below this reads as a flicker rather than a shot, so shortening past
+#: it is not a rescue. Mirrors Constraints.min_shot_ms.
+MIN_RESCUE_MS = 400
+
+
+def _rescue_by_shortening(bp: BlueprintModel, slot, segments):
+    """Find the longest segment that could fill a shortened version of this slot.
+
+    Returns ``(new_duration_ms, segment, in_ms, out_ms)`` or None.
+
+    The new duration is snapped DOWN to the beat grid. An arbitrary length would
+    shift every subsequent cut off the beat, which is a worse outcome than a
+    shorter shot -- the whole point of the blueprint is that cuts land on the
+    grid (docs/06 §6.1).
+    """
+    original = slot.duration_ms
+
+    # Candidates that satisfy everything except duration. Build a probe slot so
+    # fit() judges them on their merits.
+    probe = slot.model_copy(deep=True)
+    probe.t_out_ms = probe.t_in_ms + MIN_RESCUE_MS
+    viable = [
+        s for s in segments
+        if fit(probe, s)[0] > NEG_INF and s.usable_ms >= MIN_RESCUE_MS
+    ]
+    if not viable:
+        return None
+
+    best = max(viable, key=lambda s: (s.usable_ms, s.quality))
+    available = min(best.usable_ms, original)
+    if available < MIN_RESCUE_MS:
+        return None
+
+    # Longest beat-aligned duration that fits.
+    grid = bp.audio.beat_grid_ms
+    target_end = slot.t_in_ms + available
+    aligned = [b for b in grid if slot.t_in_ms + MIN_RESCUE_MS <= b <= target_end]
+    new_ms = (max(aligned) - slot.t_in_ms) if aligned else available
+
+    if new_ms < MIN_RESCUE_MS or new_ms >= original:
+        return None
+
+    return new_ms, best, best.usable_in_ms, best.usable_in_ms + new_ms
 
 
 def alternatives_for_slot(db, project: Project, slot_index: int, limit: int = 6):

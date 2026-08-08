@@ -192,6 +192,7 @@
         </div>
         <div class="slots" id="slots"></div>
       </div>
+      <div id="compromises"></div>
       <div id="musicNote"></div>
     </div>
   </section>
@@ -386,9 +387,18 @@ async function doRender(force) {
     });
     const out = await follow(job.job_id, "#rBar", "#rStatus");
     state.renderId = out.render_id;
-    $("#rStatus").textContent = out.cache_hit
+    let msg = out.cache_hit
       ? "Nothing changed — reused the previous render."
       : `Done — ${fmtMs(out.duration_ms)}, ${fmtBytes(out.bytes)}.`;
+    /* If the output is materially shorter than the reference, say so here
+       rather than letting the user discover it by watching. */
+    const refMs = out.reference_duration_ms;
+    if (refMs && out.duration_ms && out.duration_ms < refMs * 0.9) {
+      msg += `  Reference was ${fmtMs(refMs)}`;
+      if (out.dropped_slots) msg += ` — ${out.dropped_slots} cut(s) had no usable clip`;
+      msg += ".";
+    }
+    $("#rStatus").textContent = msg;
     done("#c4");
     await showResult(out);
     show("#c5");
@@ -420,6 +430,15 @@ async function showResult(out) {
   });
 
   const d = r.degradation || {};
+
+  /* Show every compromise, not just the music note. A shortened or dropped
+     shot changes the runtime, and the user must not have to guess why. */
+  const edits = (d.compromises || []).filter(c => c.kind !== "platform_attach");
+  $("#compromises").innerHTML = edits.length ? `
+    <div style="margin-top:14px">
+      ${edits.map(c => `<div class="gap"><b>${c.severity || "note"}</b> — ${c.detail}</div>`).join("")}
+    </div>` : "";
+
   const music = (d.compromises || []).find(c => c.kind === "platform_attach");
   $("#musicNote").innerHTML = music ? `
     <div class="note">
