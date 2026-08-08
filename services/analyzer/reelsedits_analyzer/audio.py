@@ -19,9 +19,12 @@ when the function returns. See docs/18 §3.
 
 from __future__ import annotations
 
+import atexit
 import logging
+import os
 import subprocess
 import tempfile
+import time
 from dataclasses import dataclass, field
 from pathlib import Path
 
@@ -56,15 +59,54 @@ class AudioAnalysis:
 
 def extract_audio(video: Path, out: Path | None = None) -> Path | None:
     """Demux to 22.05kHz mono WAV. Returns None for silent video."""
-    out = out or Path(tempfile.mkstemp(suffix=".wav")[1])
+    if out is None:
+        # mkstemp returns (fd, path) and the fd is OPEN. Closing it is not
+        # optional: POSIX permits unlinking an open file, Windows does not, so
+        # leaking the descriptor made the later cleanup fail with WinError 32
+        # ("used by another process") -- and that cleanup is the step that
+        # deletes the reference's audio (docs/18 §3).
+        fd, name = tempfile.mkstemp(suffix=".wav", prefix="reelsedits-audio-")
+        os.close(fd)
+        out = Path(name)
+
     proc = subprocess.run(
         ["ffmpeg", "-y", "-loglevel", "error", "-i", str(video),
          "-vn", "-ac", "1", "-ar", str(SR), "-f", "wav", str(out)],
         capture_output=True,
     )
     if proc.returncode != 0 or not out.exists() or out.stat().st_size < 1024:
+        # ffmpeg wrote nothing usable; do not leave the stub behind.
+        delete_audio(out)
         return None
     return out
+
+
+def delete_audio(path: Path) -> bool:
+    """Delete extracted audio, retrying briefly.
+
+    This is a compliance step, not housekeeping: the reference's audio is a
+    copyrighted master and must not survive analysis (docs/18 §3). On Windows
+    an antivirus or search indexer can hold a just-written file open for a
+    moment, so a single unlink is not reliable.
+
+    Returns whether the file is gone. Never raises -- a cleanup failure must
+    not fail the user's job -- but it logs at ERROR and registers an exit-time
+    retry, because silently leaving the audio on disk is the outcome we most
+    need to avoid.
+    """
+    for attempt in range(5):
+        try:
+            path.unlink(missing_ok=True)
+            return True
+        except OSError:
+            if attempt < 4:
+                time.sleep(0.1 * (attempt + 1))
+
+    log.error(
+        "could not delete extracted audio %s; scheduling a retry at exit", path
+    )
+    atexit.register(lambda p=path: p.unlink(missing_ok=True))
+    return False
 
 
 # ---------------------------------------------------------------------------
@@ -389,7 +431,7 @@ def analyze_audio(video: Path, duration_ms_hint: int | None = None) -> AudioAnal
         y, sr = librosa.load(str(wav), sr=SR, mono=True)
     finally:
         # Explicit, not incidental. docs/18 §3.
-        Path(wav).unlink(missing_ok=True)
+        delete_audio(Path(wav))
 
     if y.size < SR // 2:
         return _silent_fallback(duration_ms_hint or 30_000)

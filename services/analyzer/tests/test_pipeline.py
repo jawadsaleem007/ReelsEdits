@@ -92,11 +92,66 @@ def test_section_energy_rises_into_the_drop(audio_analysis):
 def test_audio_file_is_deleted_after_analysis(media, tmp_path, audio_analysis):
     """Reference audio deletion is an explicit, tested step, not incidental
     temp cleanup. docs/18 §3."""
+    from reelsedits_analyzer.audio import delete_audio
+
     wav = tmp_path / "extracted.wav"
     got = extract_audio(media["reference"], wav)
     assert got is not None and wav.exists()
-    wav.unlink()
+    assert delete_audio(wav) is True
     assert not wav.exists()
+
+
+def test_extract_audio_leaves_no_open_descriptor(media):
+    """Regression, WinError 32.
+
+    tempfile.mkstemp returns (fd, path) and the fd is OPEN. The original code
+    took the path and leaked the descriptor. POSIX permits unlinking an open
+    file so it passed on Linux; Windows refuses, and the failure landed on the
+    step that deletes the reference's copyrighted audio.
+
+    Checked via /proc rather than by attempting a delete, so the test fails on
+    Linux too -- otherwise this class of bug stays invisible until someone runs
+    it on Windows.
+    """
+    import os
+
+    fd_dir = Path(f"/proc/{os.getpid()}/fd")
+    if not fd_dir.exists():
+        pytest.skip("needs /proc to inspect open descriptors")
+
+    def open_wavs() -> set[str]:
+        found = set()
+        for link in fd_dir.iterdir():
+            try:
+                target = os.readlink(link)
+            except OSError:
+                continue
+            if target.endswith(".wav"):
+                found.add(target)
+        return found
+
+    before = open_wavs()
+    wav = extract_audio(media["reference"])
+    try:
+        assert wav is not None
+        leaked = open_wavs() - before
+        assert not leaked, f"extract_audio leaked an open descriptor: {leaked}"
+    finally:
+        from reelsedits_analyzer.audio import delete_audio
+
+        delete_audio(wav)
+
+
+def test_analysis_leaves_no_temp_audio_behind(media):
+    """The waveform must not survive analysis -- on disk or otherwise."""
+    import tempfile
+
+    from reelsedits_analyzer.audio import analyze_audio
+
+    tmpdir = Path(tempfile.gettempdir())
+    before = set(tmpdir.glob("reelsedits-audio-*"))
+    analyze_audio(media["reference"])
+    assert not (set(tmpdir.glob("reelsedits-audio-*")) - before)
 
 
 def test_silent_video_falls_back_without_crashing(media, tmp_path):

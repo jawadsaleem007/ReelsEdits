@@ -17,6 +17,7 @@ from __future__ import annotations
 
 import json
 import logging
+import os
 import tempfile
 import time
 import uuid
@@ -59,11 +60,32 @@ log = logging.getLogger("reelsedits.api")
 SUPPORTED_SUFFIXES = {".mp4", ".mov", ".m4v", ".mkv", ".webm", ".avi"}
 
 
+def _quiet_windows_sse_noise() -> None:
+    """Suppress a benign asyncio traceback on Windows.
+
+    When a browser closes an SSE stream, the ProactorEventLoop raises
+    ConnectionResetError (WinError 10054) inside a transport callback and logs
+    it at ERROR with a full traceback. Nothing is wrong -- the client simply
+    navigated away -- but it looks like a crash, and noise at ERROR level makes
+    real errors harder to find. Downgrade just this one case.
+    """
+    if os.name != "nt":
+        return
+
+    class _DropConnectionReset(logging.Filter):
+        def filter(self, record: logging.LogRecord) -> bool:
+            exc = record.exc_info[1] if record.exc_info else None
+            return not isinstance(exc, (ConnectionResetError, ConnectionAbortedError))
+
+    logging.getLogger("asyncio").addFilter(_DropConnectionReset())
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     s = get_settings()
     logging.basicConfig(level=s.log_level,
                         format="%(levelname)s %(name)s: %(message)s")
+    _quiet_windows_sse_noise()
 
     init_engine(s.database_url)
     init_storage("local", root=Path(s.storage_root))
